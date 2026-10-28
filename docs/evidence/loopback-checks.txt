@@ -1,0 +1,1 @@
+PASS: 28 real URLSession loopback checks; both backends, five actions, exact model and auth headers, HTTP 401/429/404/503, malformed/truncated responses, redirect refusal. No external inference requests.

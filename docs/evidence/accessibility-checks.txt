@@ -1,0 +1,20 @@
+PASS: UTF-16 replacement preserves emoji, surrounding text, and newline
+PASS: stale selected text rejected
+PASS: negative start rejected
+PASS: negative length rejected
+PASS: overflowing location rejected without trap
+PASS: overflowing end rejected without trap
+PASS: empty selection rejected
+PASS: split surrogate rejected
+PASS: split combining sequence rejected
+PASS: whole selected text can become Unicode
+PASS: replacement length may differ from selection
+PASS: out-of-bounds selection rejected
+12 checks passed
+DIAGNOSTICS FOR TEST HELPER PROCESS (not the installed WriteDock app):
+Accessibility trusted: false
+macOS: Version 26.7.1 (Build 25G241)
+com.microsoft.Outlook: 16.113.4; running=true
+com.microsoft.teams2: 26261.303.5165.1465; running=true
+com.microsoft.teams: not installed; running=false
+com.tinyspeck.slackmacgap: 4.52.171; running=true

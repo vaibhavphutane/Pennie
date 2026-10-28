@@ -1,0 +1,15 @@
+.build/
+dist/
+.DS_Store
+*.xcuserstate
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+
+# Retain raw reverse-engineering output locally; publish the report and test results.
+/docs/evidence/*
+!/docs/evidence/README.md
+!/docs/evidence/*-checks.txt
+!/docs/evidence/app-diagnostics.txt
