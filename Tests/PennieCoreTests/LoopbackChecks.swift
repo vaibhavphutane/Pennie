@@ -12,7 +12,7 @@ struct LoopbackChecks {
 
     static func main() async throws {
         guard CommandLine.arguments.count == 2, let port = Int(CommandLine.arguments[1]), (1...65535).contains(port) else {
-            fatalError("Usage: writedock-loopback-checks <loopback-port>")
+            fatalError("Usage: pennie-loopback-checks <loopback-port>")
         }
         let root = "http://127.0.0.1:\(port)"
         let client = InferenceClient()

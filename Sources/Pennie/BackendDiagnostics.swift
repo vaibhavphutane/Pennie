@@ -1,5 +1,5 @@
 import AppKit
-import WriteDockCore
+import PennieCore
 
 /// Explicit sample-only checks. Never captures a document, writes preferences, or prints keys.
 @MainActor

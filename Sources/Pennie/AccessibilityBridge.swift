@@ -32,16 +32,16 @@ public enum CaptureError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .permission: return "Enable WriteDock in System Settings → Privacy & Security → Accessibility, then try again."
-        case .disallowed: return "Select text in an enabled application first. You can also paste text into WriteDock."
+        case .permission: return "Enable Pennie in System Settings → Privacy & Security → Accessibility, then try again."
+        case .disallowed: return "Select text in an enabled application first. You can also paste text into Pennie."
         case .noSelection: return "Select the text you want to improve, then press the shortcut again."
-        case .protectedField: return "This field is protected or read-only. WriteDock will not capture it."
-        case .unsupported: return "This editor does not expose an accessible text selection. Copy the selection and paste it into WriteDock."
+        case .protectedField: return "This field is protected or read-only. Pennie will not capture it."
+        case .unsupported: return "This editor does not expose an accessible text selection. Copy the selection and paste it into Pennie."
         case .tooLong: return "Select at most 12,000 UTF-16 characters at a time."
         case .stale: return "The source text, selection, or focus changed. Capture it again before replacing."
         case .replacementUnsupported: return "This editor does not support verified selection replacement. Copy the suggestion and paste it into the selected text yourself."
         case .unverifiable: return "The editor does not expose enough context to verify replacement safely. Use Copy and paste manually."
-        case .writeUncertain: return "The editor may have changed, but replacement could not be verified. Check the source before retrying; WriteDock will not retry automatically."
+        case .writeUncertain: return "The editor may have changed, but replacement could not be verified. Check the source before retrying; Pennie will not retry automatically."
         case .caretUncertain: return "The replacement was verified, but the cursor position could not be confirmed. Check the editor before continuing."
         }
     }

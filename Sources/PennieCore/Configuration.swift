@@ -90,6 +90,27 @@ public enum WritingAction: String, Codable, CaseIterable, Identifiable, Sendable
         case .tone: return "Tone insights"
         }
     }
+    /// An explicit writing task, shared by the editor and floating companion.
+    public var callToAction: String {
+        switch self {
+        case .grammar: return "Fix grammar"
+        case .improve: return "Improve writing"
+        case .rephrase: return "Rephrase text"
+        case .clarity: return "Make clearer"
+        case .brevity: return "Make concise"
+        case .expand: return "Expand text"
+        case .professional: return "Make professional"
+        case .conversational: return "Make conversational"
+        case .confident: return "Make confident"
+        case .empathetic: return "Make empathetic"
+        case .persuasive: return "Make persuasive"
+        case .summarize: return "Summarize text"
+        case .bullets: return "Create bullet points"
+        case .translate: return "Translate text"
+        case .custom: return "Rewrite my way"
+        case .tone: return "Analyze tone"
+        }
+    }
     public var group: String {
         switch self {
         case .grammar, .improve, .rephrase, .clarity, .brevity, .expand: return "Polish & rewrite"
@@ -104,7 +125,7 @@ public enum WritingAction: String, Codable, CaseIterable, Identifiable, Sendable
         switch self {
         case .grammar: return "Fix errors with minimal edits. Correct text may stay unchanged."
         case .tone: return "Describe how your text may sound to a reader. This report cannot replace your selection."
-        case .custom: return "Tell Nib how to rewrite the text. Your request is sent with this passage."
+        case .custom: return "Tell Pennie how to rewrite the text. Your request is sent with this passage."
         default: return "Create a revised version while keeping your meaning and facts."
         }
     }

@@ -25,7 +25,7 @@ import AppKit
         check(B.replacementPlan(context: "foo bar", range: CFRange(location: 4, length: 3), selected: "bar", replacement: "longer words") == "foo longer words", "replacement length may differ from selection")
         check(B.replacementPlan(context: "foo bar", range: CFRange(location: 4, length: 4), selected: "bar", replacement: "x") == nil, "out-of-bounds selection rejected")
         print("\(checks) checks passed")
-        print("DIAGNOSTICS FOR TEST HELPER PROCESS (not the installed WriteDock app):")
+        print("DIAGNOSTICS FOR TEST HELPER PROCESS (not the installed Pennie app):")
         print(B.diagnostics())
     }
 }

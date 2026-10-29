@@ -3,9 +3,9 @@ set -eu
 cd "$(dirname "$0")/.."
 mkdir -p .build/checks docs/evidence
 swiftc -swift-version 5 -D LOOPBACK_CHECKS -parse-as-library \
-    Sources/WriteDockCore/*.swift Tests/WriteDockCoreTests/LoopbackChecks.swift \
-    -o .build/checks/writedock-loopback-checks
-fixture_dir=$(mktemp -d "${TMPDIR:-/tmp}/writedock-loopback.XXXXXX")
+    Sources/PennieCore/*.swift Tests/PennieCoreTests/LoopbackChecks.swift \
+    -o .build/checks/pennie-loopback-checks
+fixture_dir=$(mktemp -d "${TMPDIR:-/tmp}/pennie-loopback.XXXXXX")
 python3 scripts/mock_backend.py --port 0 --port-file "$fixture_dir/port" > "$fixture_dir/server.log" 2>&1 &
 fixture_pid=$!
 cleanup() {
@@ -30,5 +30,5 @@ while [ ! -s "$fixture_dir/port" ]; do
     sleep 0.1
 done
 fixture_port=$(cat "$fixture_dir/port")
-.build/checks/writedock-loopback-checks "$fixture_port" > docs/evidence/loopback-checks.txt
+.build/checks/pennie-loopback-checks "$fixture_port" > docs/evidence/loopback-checks.txt
 cat docs/evidence/loopback-checks.txt

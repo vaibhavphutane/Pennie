@@ -1,16 +1,16 @@
 import AppKit
 import SwiftUI
-import WriteDockCore
+import PennieCore
 
 enum MascotAsset {
     static let image: NSImage? = {
         // Packaged .app uses its own resource directory; swift run uses SwiftPM's bundle.
-        let url = Bundle.main.url(forResource: "Nib", withExtension: "png") ?? Bundle.module.url(forResource: "Nib", withExtension: "png")
+        let url = Bundle.main.url(forResource: "Pennie", withExtension: "png") ?? Bundle.module.url(forResource: "Pennie", withExtension: "png")
         return url.flatMap(NSImage.init(contentsOf:))
     }()
 }
 
-struct NibMascot: View {
+struct PennieMascot: View {
     var size: CGFloat = 64
     var animated = true
     var thinking = false
@@ -30,7 +30,7 @@ struct NibMascot: View {
     }
 }
 
-private struct NibButton: View {
+private struct PennieButton: View {
     @ObservedObject var settings: AppSettings
     let open: () -> Void
     let pause: () -> Void
@@ -38,7 +38,7 @@ private struct NibButton: View {
     var body: some View {
         Button(action: open) {
             ZStack(alignment: .bottomTrailing) {
-                NibMascot(size: 68, animated: settings.animateMascot)
+                PennieMascot(size: 68, animated: settings.animateMascot)
                     .shadow(color: .black.opacity(hovered ? 0.25 : 0.16), radius: 4, y: 3)
                 Image(systemName: "sparkle").font(.system(size: 10, weight: .bold)).foregroundStyle(Color(red: 0.03, green: 0.29, blue: 0.24))
                     .padding(5).background(Color(red: 0.73, green: 0.97, blue: 0.86), in: Circle()).offset(x: -3, y: -5)
@@ -47,10 +47,10 @@ private struct NibButton: View {
         .buttonStyle(.plain).scaleEffect(hovered ? 1.06 : 1)
         .animation(.easeOut(duration: 0.15), value: hovered)
         .onHover { hovered = $0 }
-        .help("Nib · Improve your writing")
-        .accessibilityLabel("Nib, WriteDock writing assistant")
-        .accessibilityHint("Review the current selection or draft. No text is sent until you choose Send.")
-        .contextMenu { Button("Pause Nib in this app", action: pause) }
+        .help("Pennie · Say it like you.")
+        .accessibilityLabel("Pennie, your writing companion")
+        .accessibilityHint("Review the current selection or draft. No text is sent until you request a writing action.")
+        .contextMenu { Button("Pause Pennie in this app", action: pause) }
     }
 }
 
@@ -70,9 +70,10 @@ struct WidgetCard: View {
         ScrollView {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                NibMascot(size: 55, animated: settings.animateMascot, thinking: state.busy)
+                PennieMascot(size: 55, animated: settings.animateMascot, thinking: state.busy)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("A little help from Nib").font(.system(size: 17, weight: .semibold, design: .rounded)).foregroundStyle(ink)
+                    Text(ProductIdentity.name).font(.system(size: 17, weight: .semibold, design: .rounded)).foregroundStyle(ink)
+                    Text(ProductIdentity.tagline).font(.system(size: 12)).foregroundStyle(muted)
                     Text(demo ? "Local preview · no text sent" : state.origin).font(.system(size: 11, weight: .medium)).foregroundStyle(muted).lineLimit(1)
                 }
                 Spacer(minLength: 0)
@@ -136,18 +137,19 @@ struct WidgetCard: View {
             HStack {
                 if state.busy {
                     ProgressView().controlSize(.small)
-                    Text(state.replacing ? "Applying…" : "Thinking…").font(.system(size: 12)).foregroundStyle(muted)
+                    Text(state.replacing ? "Applying…" : "Working on your words…").font(.system(size: 12)).foregroundStyle(muted)
                     Spacer()
                     if !state.replacing { Button("Cancel") { state.cancel() }.buttonStyle(.plain) }
                 } else {
                     Button { state.send() } label: {
                         HStack {
-                            Text("Send to \(settings.backend.shortLabel)")
+                            Text(state.action.callToAction)
                             Spacer()
-                            Image(systemName: "arrow.up.right")
+                            Image(systemName: state.action.isAnalysis ? "text.magnifyingglass" : "pencil.line")
                         }.font(.system(size: 12, weight: .semibold)).padding(.horizontal, 14).padding(.vertical, 11)
                             .foregroundStyle(.white).background(green, in: RoundedRectangle(cornerRadius: 12))
                     }.buttonStyle(.plain).disabled(demo || !state.canSend)
+                        .help("Send this passage and your writing instructions to the displayed model.")
                 }
             }
             Text(state.status).font(.system(size: 11)).foregroundStyle(muted).lineLimit(4).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
@@ -155,7 +157,7 @@ struct WidgetCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(settings.provider.model.isEmpty ? "Choose a model in Settings" : settings.provider.model).lineLimit(1)
                 Text(settings.provider.baseURL.isEmpty ? "Add your inference endpoint" : settings.provider.baseURL).lineLimit(1).truncationMode(.middle)
-                Text("Nothing is sent until you press Send.")
+                Text("“\(state.action.callToAction)” sends your words and writing instructions to this model.")
             }.font(.system(size: 9)).foregroundStyle(muted)
             HStack {
                 Button("Settings", action: configure)
@@ -230,10 +232,10 @@ final class FloatingWidgetController {
             panel.isOpaque = false; panel.backgroundColor = .clear; panel.isReleasedWhenClosed = false
             panel.hasShadow = panel === card; panel.animationBehavior = .none
         }
-        bubble.title = "Nib · WriteDock"; card.title = "WriteDock writing preview"
+        bubble.title = "Pennie"; card.title = "Pennie writing preview"
         card.acceptsKeyboard = true
         card.onEscape = { [weak self] in self?.dismiss() }
-        bubble.contentView = CompanionHostingView(rootView: NibButton(settings: settings, open: { [weak self] in self?.openCard() }, pause: { [weak self] in self?.pauseHere() }))
+        bubble.contentView = CompanionHostingView(rootView: PennieButton(settings: settings, open: { [weak self] in self?.openCard() }, pause: { [weak self] in self?.pauseHere() }))
         installCard(demo: false)
     }
 
@@ -251,10 +253,10 @@ final class FloatingWidgetController {
         guard !demo, !state.replacing else { return }
         defer { writeDiagnostics() }
         let enabled = settings.allowedApps.subtracting(settings.pausedWidgetApps)
-        guard settings.widgetEnabled else { settings.widgetStatus = "Nib is paused. Enable the floating widget above."; hide(); return }
+        guard settings.widgetEnabled else { settings.widgetStatus = "Pennie is paused. Enable the floating widget above."; hide(); return }
         guard let app = NSWorkspace.shared.frontmostApplication,
               let bundle = app.bundleIdentifier, enabled.contains(bundle) else {
-            settings.widgetStatus = AccessibilityBridge.isTrusted ? "Switch to an allowed app to show Nib. Check the app list and paused apps below." : "Enable Accessibility for this WriteDock app to capture text."
+            settings.widgetStatus = AccessibilityBridge.isTrusted ? "Switch to an allowed app to show Pennie. Check the app list and paused apps below." : "Enable Accessibility for this Pennie app to capture text."
             hide(); return
         }
         // A key nonactivating panel can temporarily move keyboard focus away from the host field.
@@ -271,7 +273,7 @@ final class FloatingWidgetController {
         if card.isVisible, anchor == nil { return }
         anchor = current
         visibleAppID = bundle; visibleProcessID = app.processIdentifier
-        settings.widgetStatus = "Nib is beside the editor in \(app.localizedName ?? bundle)."
+        settings.widgetStatus = "Pennie is beside the editor in \(app.localizedName ?? bundle)."
         bubble.setFrame(frame, display: true)
         if !bubble.isVisible { bubble.orderFrontRegardless() }
         if card.isVisible { card.setFrame(FloatingPlacement.cardFrame(widget: frame, screen: screen, size: cardSize), display: true) }
@@ -281,8 +283,8 @@ final class FloatingWidgetController {
         if card.isVisible, visibleProcessID != app.processIdentifier || anchor != nil { dismiss() }
         anchor = nil; visibleAppID = app.bundleIdentifier; visibleProcessID = app.processIdentifier
         settings.widgetStatus = AccessibilityBridge.isTrusted
-            ? "Nib is in the lower-right corner. Click the message compose box to attach it to an editor, or click Nib for capture guidance."
-            : "Nib is in the lower-right corner. Enable Accessibility for WriteDock to capture text."
+            ? "Pennie is in the lower-right corner. Click the message compose box to attach it to an editor, or click Pennie for capture guidance."
+            : "Pennie is in the lower-right corner. Enable Accessibility for Pennie to capture text."
         let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
         guard let screen, let frame = FloatingPlacement.dockedWidgetFrame(screen: screen.visibleFrame) else { hide(); return }
         // Keep a docked card stable while the user moves the pointer into it.
@@ -296,7 +298,7 @@ final class FloatingWidgetController {
         // Explicit debug mode only: no text, window titles, keys, or provider URLs.
         let snapshot: [String: Any] = [
             "pid": ProcessInfo.processInfo.processIdentifier,
-            "accessibilityTrustedForWriteDock": AccessibilityBridge.isTrusted,
+            "accessibilityTrustedForPennie": AccessibilityBridge.isTrusted,
             "frontmostBundleID": NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "unknown",
             "widgetEnabled": settings.widgetEnabled, "bubbleVisible": bubble.isVisible,
             "cardVisible": card.isVisible, "anchoredToEditor": anchor != nil,
@@ -361,7 +363,7 @@ final class FloatingWidgetController {
         state.source = "This are a example. I has recieved teh message."
         state.suggestion = "This is an example. I have received the message."
         state.origin = "Demo draft"
-        state.status = "Preview only. In a supported app, click Nib to review your words."
+        state.status = "Preview only. In a supported app, click Pennie to review your words."
         installCard(demo: true)
         let screen = NSScreen.main?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
         let widgetFrame = CGRect(x: screen.midX + 190, y: screen.midY - 260, width: 72, height: 80)
@@ -380,7 +382,7 @@ final class WidgetDemoDelegate: NSObject, NSApplicationDelegate {
         controller = FloatingWidgetController(state: state, settings: settings, openEditor: {}, openSettings: {})
         let menu = NSMenu(), root = NSMenuItem(), submenu = NSMenu()
         menu.addItem(root); root.submenu = submenu
-        submenu.addItem(withTitle: "Quit Nib Preview", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        submenu.addItem(withTitle: "Quit Pennie Preview", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         NSApp.mainMenu = menu
         controller?.showDemo()
         if CommandLine.arguments.contains("--smoke-test-demo") {
@@ -448,7 +450,7 @@ enum WidgetStateChecks {
         state.receive("Bonjour"); settings.writingProfile.dialect = .british
         check(state.suggestion.isEmpty, "writing goals changes invalidate result")
         check(MascotAsset.image != nil, "mascot is bundled")
-        if let url = Bundle.main.url(forResource: "Nib", withExtension: "png") ?? Bundle.module.url(forResource: "Nib", withExtension: "png"),
+        if let url = Bundle.main.url(forResource: "Pennie", withExtension: "png") ?? Bundle.module.url(forResource: "Pennie", withExtension: "png"),
            let bitmap = NSBitmapImageRep(data: (try? Data(contentsOf: url)) ?? Data()) {
             check(bitmap.hasAlpha && bitmap.pixelsWide >= 512, "mascot preserves high-resolution alpha")
         } else { preconditionFailure("Mascot PNG missing") }
@@ -474,7 +476,7 @@ enum WidgetPreview {
         let card = WidgetCard(state: state, settings: settings, demo: true, close: {}, expand: {}, configure: {}, pause: {})
         let preview = HStack(alignment: .bottom, spacing: 20) {
             card.frame(width: 368, height: 610)
-            NibMascot(size: 80, animated: false).padding(.bottom, 20)
+            PennieMascot(size: 80, animated: false).padding(.bottom, 20)
         }.padding(32).background(Color(red: 0.90, green: 0.93, blue: 0.92))
         let renderer = ImageRenderer(content: preview)
         renderer.scale = 2

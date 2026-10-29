@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "WriteDock",
+    name: "Pennie",
     platforms: [.macOS(.v13)],
-    products: [.executable(name: "WriteDock", targets: ["WriteDock"])],
+    products: [.executable(name: "Pennie", targets: ["Pennie"])],
     targets: [
-        .target(name: "WriteDockCore"),
-        .executableTarget(name: "WriteDock", dependencies: ["WriteDockCore"], resources: [.process("Resources")]),
-        .testTarget(name: "WriteDockCoreTests", dependencies: ["WriteDockCore"])
+        .target(name: "PennieCore"),
+        .executableTarget(name: "Pennie", dependencies: ["PennieCore"], resources: [.process("Resources")]),
+        .testTarget(name: "PennieCoreTests", dependencies: ["PennieCore"])
     ]
 )

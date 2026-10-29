@@ -2,7 +2,7 @@ import AppKit
 import Carbon
 import Combine
 import SwiftUI
-import WriteDockCore
+import PennieCore
 
 @MainActor
 final class EditorState: ObservableObject {
@@ -14,7 +14,7 @@ final class EditorState: ObservableObject {
         didSet {
             if oldValue != action {
                 resetResult()
-                status = "Selected \(action.label). Press Send to request a result."
+                status = "Ready when you are. Choose “\(action.callToAction)” to request a suggestion."
             }
         }
     }
@@ -171,10 +171,10 @@ struct EditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
-                NibMascot(size: 54, animated: false)
+                PennieMascot(size: 54, animated: false)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("WriteDock").font(.title2.bold())
-                    Text("A little polish. Still your voice.").foregroundStyle(.secondary)
+                    Text(ProductIdentity.name).font(.title2.bold())
+                    Text(ProductIdentity.tagline).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button(action: showSettings) { Label("Settings", systemImage: "gearshape") }
@@ -188,7 +188,7 @@ struct EditorView: View {
             }
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("TEXT TO SEND").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    Text("YOUR WORDS").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                     TextEditor(text: $state.source).font(.system(size: 15)).padding(10)
                         .background(.background).clipShape(RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(.quaternary))
@@ -200,7 +200,10 @@ struct EditorView: View {
                     Text(state.suggestion.isEmpty ? "SUGGESTION" : state.resultTitle).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                     ScrollView {
                         if state.suggestion.isEmpty {
-                            Text("Your suggestion will appear here.").foregroundStyle(.secondary).padding(14)
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("A fresh look at your words.").font(.headline)
+                                Text("Choose a writing action when you’re ready. Pennie’s suggestion will appear here for you to review.")
+                            }.foregroundStyle(.secondary).padding(14)
                         } else { SuggestionText(state: state).font(.system(size: 15)).padding(14) }
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color.teal.opacity(0.055)).clipShape(RoundedRectangle(cornerRadius: 10))
@@ -227,15 +230,16 @@ struct EditorView: View {
                     ProgressView().controlSize(.small)
                     if !state.replacing { Button("Cancel") { state.cancel() } }
                 }
-                Button("Send to \(settings.backend.label)") { state.send() }
+                Button(state.action.callToAction) { state.send() }
                     .buttonStyle(.borderedProminent).tint(.teal)
                     .disabled(!state.canSend)
+                    .help("Send this passage and your writing instructions to the displayed model.")
             }
             Text(state.action.help).font(.caption).foregroundStyle(.secondary)
             Text(state.status).font(.callout).textSelection(.enabled).frame(minHeight: 35, alignment: .topLeading)
             VStack(alignment: .leading, spacing: 3) {
                 Text("Destination: \(settings.provider.baseURL.isEmpty ? "configure in Settings" : settings.provider.baseURL) · Model: \(settings.provider.model.isEmpty ? "not configured" : settings.provider.model)")
-                Text("Send or Regenerate submits this text, your request, goals, dictionary, and preferences. No text history is saved.")
+                Text("“\(state.action.callToAction)” or Regenerate sends your words and writing instructions to this model. No text history is saved.")
             }.font(.caption).foregroundStyle(.secondary)
         }.padding(24).frame(minWidth: 850, minHeight: 660)
     }
@@ -271,9 +275,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let appMenu = NSMenu(); let root = NSMenuItem(); appMenu.addItem(root)
         let menu = NSMenu(); root.submenu = menu
-        menu.addItem(withTitle: "About WriteDock", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "About Pennie", action: #selector(showAbout), keyEquivalent: "").target = self
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",").target = self
-        menu.addItem(.separator()); menu.addItem(withTitle: "Quit WriteDock", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(.separator()); menu.addItem(withTitle: "Quit Pennie", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let editItem = NSMenuItem(); editItem.title = "Edit"; appMenu.addItem(editItem)
         let edit = NSMenu(title: "Edit"); editItem.submenu = edit
         for (name, action, key) in [("Undo", "undo:", "z"), ("Cut", "cut:", "x"), ("Copy", "copy:", "c"), ("Paste", "paste:", "v"), ("Select All", "selectAll:", "a")] {
@@ -281,18 +285,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         NSApp.mainMenu = appMenu
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 960, height: 720), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "WriteDock"; window.isReleasedWhenClosed = false
+        window.title = "Pennie"; window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: EditorView(state: state, settings: settings, showSettings: { [weak self] in self?.openSettings() }))
         window.center()
         menuItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        menuItem.button?.image = NSImage(systemSymbolName: "pencil.line", accessibilityDescription: "WriteDock")
+        menuItem.button?.image = NSImage(systemSymbolName: "pencil.tip", accessibilityDescription: ProductIdentity.name)
         let statusMenu = NSMenu()
-        statusMenu.addItem(withTitle: "Open WriteDock", action: #selector(show), keyEquivalent: "").target = self
+        statusMenu.addItem(withTitle: "Open Pennie", action: #selector(show), keyEquivalent: "").target = self
         statusMenu.addItem(withTitle: "Capture selection (⌘⇧G)", action: #selector(capture), keyEquivalent: "").target = self
         statusMenu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: "").target = self
         statusMenu.addItem(.separator()); statusMenu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
         menuItem.menu = statusMenu
-        let widgetItem = NSMenuItem(title: "Pause floating widget", action: #selector(toggleWidget), keyEquivalent: "")
+        let widgetItem = NSMenuItem(title: settings.widgetEnabled ? "Pause Pennie beside editors" : "Show Pennie beside editors", action: #selector(toggleWidget), keyEquivalent: "")
         widgetItem.target = self
         statusMenu.insertItem(widgetItem, at: 2)
         let arguments = CommandLine.arguments
@@ -305,7 +309,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             floatingWidget?.start()
         }
         shortcut.callback = { [weak self] in Task { @MainActor in self?.capture() } }
-        if !shortcut.register() { state.status = "⌘⇧G is in use by another application. Use the WriteDock menu bar capture action or Paste text." }
+        if !shortcut.register() { state.status = "⌘⇧G is in use by another application. Use the Pennie menu bar capture action or Paste text." }
         if CommandLine.arguments.contains("--show-settings") { openSettings() } else { show() }
         if CommandLine.arguments.contains("--render-preview") {
             state.source = "This are a example. I has recieved teh message.\n\nCan you send the updated timeline tommorow?"
@@ -325,13 +329,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
+    @objc func showAbout() {
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .applicationName: ProductIdentity.name,
+            .credits: NSAttributedString(string: "\(ProductIdentity.tagline)\n\n\(ProductIdentity.story)\n\n\(ProductIdentity.descriptor)")
+        ])
+    }
     @objc func show() {
         floatingWidget?.dismiss(clear: false)
         NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil)
     }
     @objc func toggleWidget(_ sender: NSMenuItem) {
         settings.widgetEnabled.toggle(); settings.save()
-        sender.title = settings.widgetEnabled ? "Pause floating widget" : "Resume floating widget"
+        sender.title = settings.widgetEnabled ? "Pause Pennie beside editors" : "Show Pennie beside editors"
         floatingWidget?.refresh()
     }
     @objc func capture() {
@@ -357,7 +367,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if settingsWindow == nil {
             settingsWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 660, height: 760), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
             settingsWindow?.minSize = NSSize(width: 580, height: 580)
-            settingsWindow?.title = "WriteDock Settings"; settingsWindow?.isReleasedWhenClosed = false
+            settingsWindow?.title = "Pennie Settings"; settingsWindow?.isReleasedWhenClosed = false
             settingsWindow?.contentView = NSHostingView(rootView: SettingsView(settings: settings)); settingsWindow?.center()
         }
         NSApp.activate(ignoringOtherApps: true); settingsWindow?.makeKeyAndOrderFront(nil)
@@ -367,7 +377,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
-struct WriteDockApp {
+struct PennieApp {
     @MainActor static func main() {
         if CommandLine.arguments.contains("--check-configured-backend") {
             _ = NSApplication.shared
@@ -459,7 +469,7 @@ struct WriteDockApp {
         }
         let app = NSApplication.shared
         app.setActivationPolicy(.regular)
-        app.applicationIconImage = Bundle.main.url(forResource: "Nib", withExtension: "icns").flatMap(NSImage.init(contentsOf:)) ?? MascotAsset.image
+        app.applicationIconImage = Bundle.main.url(forResource: "Pennie", withExtension: "icns").flatMap(NSImage.init(contentsOf:)) ?? MascotAsset.image
         if CommandLine.arguments.contains("--settings-preview") {
             let delegate = SettingsPreviewDelegate(); app.delegate = delegate
             withExtendedLifetime(delegate) { app.run() }

@@ -1,5 +1,5 @@
 import XCTest
-@testable import WriteDockCore
+@testable import PennieCore
 
 private final class StubProtocol: URLProtocol {
     static var handler: ((URLRequest) throws -> (Int, [String: String], Data))?
@@ -41,7 +41,7 @@ final class InferenceClientTests: XCTestCase {
             XCTAssertEqual(request.httpMethod, "POST")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), kind == .anthropic ? nil : "Bearer test-secret")
             XCTAssertEqual(request.value(forHTTPHeaderField: "x-api-key"), kind == .anthropic ? "test-secret" : nil)
-            XCTAssertEqual(request.value(forHTTPHeaderField: "X-Title"), kind == .openRouter ? "WriteDock" : nil)
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-Title"), kind == .openRouter ? "Pennie" : nil)
             let body = try XCTUnwrap(JSONSerialization.jsonObject(with: request.httpBody!) as? [String: Any])
             XCTAssertEqual(body["model"] as? String, "exact/alias")
             XCTAssertEqual(body["stream"] as? Bool, false)

@@ -1,20 +1,30 @@
-# WriteDock
+# Pennie
 
-**Your writing assistant. Your model. No extra writing subscription.**
+<img src="Sources/Pennie/Resources/Pennie.png" alt="Pennie, a mint-colored writing companion with a fountain-pen crest" width="128">
 
-WriteDock brings grammar fixes, clearer sentences, rewrites, and tone adjustments to your Mac—the everyday writing tasks. Connect your own model through **OpenRouter, OpenAI, LiteLLM Inference Hub, Claude (Anthropic), or another compatible API gateway**.
+**Say it like you.**
 
-Use the model access you already have. WriteDock adds no subscription of its own: you supply the endpoint, model, and API key. Your provider's API usage charges and access requirements still apply; check whether your existing plan includes API access.
+Your writing companion, powered by the model you choose. No extra writing subscription.
 
-The app runs locally and sends the text you choose directly to your configured endpoint. **There is no WriteDock cloud service in between.** You control what to send, which model receives it, and whether to apply the result.
+Pennie brings grammar fixes, clearer sentences, rewrites, and tone adjustments to your Mac—the everyday writing tasks. Connect your own model through **OpenRouter, OpenAI, LiteLLM Inference Hub, Claude (Anthropic), or another compatible API gateway**.
+
+Use the model access you already have. Pennie adds no subscription of its own: you supply the endpoint, model, and API key. Your provider's API usage charges and access requirements still apply; check whether your existing plan includes API access.
+
+The app runs locally and sends the text you choose directly to your configured endpoint. **There is no Pennie cloud service in between.** You control what to send, which model receives it, and whether to apply the result.
+
+## Meet Pennie
+
+Pennie is your familiar desk companion—the favorite pen you reach for when you want the words to come out right. Bring your thoughts. Pennie helps you shape them into writing that still sounds like you.
+
+The mint companion beside your editor and the app in your Dock share the same name: **Pennie**. Quiet, patient, and ready when you are, Pennie offers a second look at your words. You choose what to keep.
 
 ## Writing help where you work
 
-Meet **Nib**, the floating writing companion that appears beside supported editors in Outlook, Teams, and Slack. Select a passage, ask for help, and review the suggestion alongside your original. You can also paste text into WriteDock and copy the result back into any app.
+Pennie appears beside supported editors in Outlook, Teams, and Slack. Select a passage, ask for help, and review the suggestion alongside your original. You can also paste text into the full editor and copy the result back into any app.
 
-Both Nib and the full editor offer **16 writing actions**:
+The compact companion and full editor offer the same **16 writing actions**:
 
-| What you need | What WriteDock can do |
+| What you need | What Pennie can do |
 | --- | --- |
 | Polish a draft | Fix grammar, spelling, and punctuation; improve writing; rephrase; improve clarity; shorten or expand |
 | Find the right tone | Make writing professional, conversational, confident, empathetic, or persuasive |
@@ -29,10 +39,10 @@ Build from a fresh clone on macOS with Apple's Command Line Tools installed:
 
 ```bash
 bash scripts/build-app.sh
-open dist/WriteDock.app
+open dist/Pennie.app
 ```
 
-For regular use, copy the app to `~/Applications` or `/Applications` **before** granting Accessibility permission. Open **Settings** (`⌘,`), choose **Enable Accessibility…**, and enable that exact app in **System Settings → Privacy & Security → Accessibility**. Quit and reopen WriteDock if needed. Manual copy/paste works without this permission.
+For regular use, copy the app to `~/Applications` or `/Applications` **before** granting Accessibility permission. Open **Settings** (`⌘,`), choose **Enable Accessibility…**, and enable that exact app in **System Settings → Privacy & Security → Accessibility**. Quit and reopen Pennie if needed. Manual copy/paste works without this permission.
 
 Next, connect your model below and select a passage to try your first edit.
 
@@ -55,33 +65,33 @@ For another gateway, use **LiteLLM Inference Hub** when it accepts OpenAI-compat
 3. Use **Paste key**, then **Save settings & key**. Each backend keeps its own URL and model; credentials are stored in macOS Keychain for that backend and exact URL.
 4. Optionally choose **Test correction with sample text** to check the connection. This sends the displayed synthetic sentence using your provider's quota, with no draft or personal writing preferences.
 
-Enter the API prefix only. WriteDock appends `/chat/completions`, `/responses`, or `/messages` for the selected backend. Remote endpoints require HTTPS; exact loopback hosts such as `localhost` and `127.0.0.1` may use HTTP. A local server that ignores authentication can use a non-secret placeholder key; the client requires a nonempty key.
+Enter the API prefix only. Pennie appends `/chat/completions`, `/responses`, or `/messages` for the selected backend. Remote endpoints require HTTPS; exact loopback hosts such as `localhost` and `127.0.0.1` may use HTTP. A local server that ignores authentication can use a non-secret placeholder key; the client requires a nonempty key.
 
 Saving confirms local storage, not successful provider authentication. Save a newly pasted key before testing. Existing OpenRouter/LiteLLM settings migrate without resetting their values.
 
 ## Your text goes to the provider you choose
 
-WriteDock's interface, text capture, and suggestion review run on your Mac. Inference runs at the endpoint you configure. Using a remote provider means sending that provider the passage you submit; using a gateway may also involve the upstream model provider it routes to. Their processing and retention policies apply. A local endpoint keeps inference on your Mac only if the server also runs the model locally without forwarding requests.
+Pennie's interface, text capture, and suggestion review run on your Mac. Inference runs at the endpoint you configure. Using a remote provider means sending that provider the passage you submit; using a gateway may also involve the upstream model provider it routes to. Their processing and retention policies apply. A local endpoint keeps inference on your Mac only if the server also runs the model locally without forwarding requests.
 
-- **You decide when text is sent.** Capturing a passage or choosing an action does not upload it. Review or redact **Text to send**, confirm the destination and model, then press **Send**. **Regenerate** explicitly sends another request.
+- **You decide when text is sent.** Capturing a passage or selecting an action in the picker does not upload it. Review or redact **Your words**, confirm the destination and model, then press the task button, such as **Fix grammar**. **Regenerate** explicitly sends another request.
 - **The request contains the passage and editing instructions.** These include the selected action, applicable custom request or translation language, writing goals, personal dictionary, preferences, and model request fields. No tools or conversation history are sent. Direct OpenAI requests set `store: false`; provider retention policies still apply.
-- **No background draft uploads or persistent writing history.** Nib tracks editor metadata and bounds to position itself without reading the text during tracking. Text capture happens only when you click Nib or invoke capture. Secure and protected fields are rejected.
+- **No background draft uploads or persistent writing history.** Pennie tracks editor metadata and bounds to position itself without reading the text during tracking. Text capture happens only when you click Pennie or invoke capture. Secure and protected fields are rejected.
 - **Your API keys are stored in macOS Keychain.** They are sent only to the configured endpoint for authentication. Credentials are scoped to the backend and exact URL, cached in memory until Quit, and never written to preferences, logs, or writing history. Changing the endpoint does not reuse another endpoint's key.
-- **Requests stay under your control.** Redirects are refused. WriteDock does not automatically retry or fall back to another backend. Failed inference requests leave the source text unchanged.
+- **Requests stay under your control.** Redirects are refused. Pennie does not automatically retry or fall back to another backend. Failed inference requests leave the source text unchanged.
 
 Non-secret settings are stored locally in macOS UserDefaults. Source context used to verify a replacement stays in memory and is never sent to the model. See [current limits](#current-limits) for capture and replacement details.
 
 ## Make your first edit
 
-1. **Capture.** Select a passage in Outlook, Teams, or Slack, then click Nib. Press **⌘⇧G** to capture into the full editor, or use **Paste text** for text you copied yourself.
-2. **Choose.** Review **Text to send** and pick a **Writing action**, such as Grammar & spelling, Make concise, or Professional tone.
-3. **Send.** Check the displayed endpoint and model, then press **Send**.
+1. **Capture.** Select a passage in Outlook, Teams, or Slack, then click Pennie. Press **⌘⇧G** to capture into the full editor, or use **Paste text** for text you copied yourself.
+2. **Choose.** Review **Your words** and pick a **Writing action**, such as Grammar & spelling, Make concise, or Professional tone.
+3. **Ask Pennie.** Check the displayed endpoint and model, then press the button for your task: **Fix grammar**, **Make concise**, **Make professional**, or another selected action. This sends the request to your configured model.
 4. **Review.** Read the result. **Show changes** highlights additions in green and removals with red strikethrough. Copy and Replace use the clean result.
 5. **Apply.** Choose **Accept**, then **Replace selection** for a verified edit in a supported editor, or **Copy** and paste it yourself. **Dismiss** discards the suggestion.
 
-Accept approves a suggestion locally; replacement is a separate action. WriteDock never sends mail or chat messages. Tone insights are a separate report and cannot be accepted or used as replacement text.
+Accept approves a suggestion locally; replacement is a separate action. Pennie never sends mail or chat messages. Tone insights are a separate report and cannot be accepted or used as replacement text.
 
-If you edit or redact the captured preview, direct replacement is disabled because it no longer matches the original selection. Use Copy instead. Clicking Nib with no selection can preview a readable draft; this also supports Copy only. Editors that do not expose a writable selection use the same manual copy/paste workflow.
+If you edit or redact the captured preview, direct replacement is disabled because it no longer matches the original selection. Use Copy instead. Clicking Pennie with no selection can preview a readable draft; this also supports Copy only. Editors that do not expose a writable selection use the same manual copy/paste workflow.
 
 ## Settings and troubleshooting
 
@@ -90,27 +100,27 @@ If you edit or redact the captured preview, direct replacement is disabled becau
 
 The key box clears after saving. **API key saved in Keychain for this backend and URL** confirms storage. A blank key field keeps the saved key; **Remove saved key** deletes it and clears that endpoint's session cache. To remove a key for another URL, select that URL first, or use Keychain Access under service `local.WriteDock.backend`.
 
-Corrections and Settings status checks use noninteractive Keychain queries. If access needs approval, choose **Unlock saved key** or paste and save the key again. Saving, removing, or explicitly unlocking a key may trigger macOS authorization. **Always Allow** trusts the current signed build for subsequent launches; a locked Keychain or a newly signed build can require approval again. WriteDock does not weaken Keychain access controls.
+Corrections and Settings status checks use noninteractive Keychain queries. If access needs approval, choose **Unlock saved key** or paste and save the key again. Saving, removing, or explicitly unlocking a key may trigger macOS authorization. **Always Allow** trusts the current signed build for subsequent launches; a locked Keychain or a newly signed build can require approval again. Pennie does not weaken Keychain access controls.
 
 </details>
 
 <details>
-<summary>Nib placement, visibility, and Accessibility</summary>
+<summary>Pennie placement, visibility, and Accessibility</summary>
 
-Nib appears beside detected editors, with a lower-right corner launcher when editor detection or Accessibility is unavailable. It stays within the visible display, including additional monitors. A corner launcher does not bypass protected-field checks or grant text access.
+Pennie appears beside detected editors, with a lower-right corner launcher when editor detection or Accessibility is unavailable. It stays within the visible display, including additional monitors. A corner launcher does not bypass protected-field checks or grant text access.
 
-Nib checks foreground editor metadata about every 0.7 seconds while enabled. Its nonactivating panel keeps the source app active. Closing the compact preview or switching apps/fields clears it. **Open editor** moves the preview into the larger window. Backend, model, or preference changes invalidate pending suggestions.
+Pennie checks foreground editor metadata about every 0.7 seconds while enabled. Its nonactivating panel keeps the source app active. Closing the compact preview or switching apps/fields clears it. **Open editor** moves the preview into the larger window. Backend, model, or preference changes invalidate pending suggestions.
 
-Use **Pause here** to hide Nib in one app and resume it in Settings. Disabled, paused, and disallowed apps hide the widget. You can turn the widget or character animation off; system Reduce Motion is respected.
+Use **Pause here** to hide Pennie in one app and resume it in Settings. Disabled, paused, and disallowed apps hide the widget. You can turn the widget or character animation off; system Reduce Motion is respected.
 
-Settings shows WriteDock's own Accessibility state and widget status. Permission granted to another app does not apply to WriteDock. If macOS shows WriteDock enabled but access is denied, remove and re-add the current app bundle, authenticate if asked, then reopen it. Rebuilding an ad-hoc-signed app can require renewing its grant. A stable developer signing identity helps preserve trust across updates.
+Settings shows Pennie's own Accessibility state and widget status. Permission granted to another app does not apply to Pennie. If macOS shows Pennie enabled but access is denied, remove and re-add the current app bundle, authenticate if asked, then reopen it. Rebuilding an ad-hoc-signed app can require renewing its grant. A stable developer signing identity helps preserve trust across updates.
 
 </details>
 
 <details>
 <summary>Unchanged text or an unexpected result</summary>
 
-WriteDock labels identical output **UNCHANGED TEXT** and disables Accept/Replace. Grammar checks may correctly leave clean text alone. Choose **Improve writing** or **Rephrase** when you want a different version. An echo from a rewrite action is reported as incomplete; try **Regenerate** or another model.
+Pennie labels identical output **UNCHANGED TEXT** and disables Accept/Replace. Grammar checks may correctly leave clean text alone. Choose **Improve writing** or **Rephrase** when you want a different version. An echo from a rewrite action is reported as incomplete; try **Regenerate** or another model.
 
 Use **Test correction with sample text** in Settings to check the selected backend. Missing keys, missing model IDs, authentication failures, rate limits, unavailable models, and timeouts are reported explicitly. A saved key alone does not confirm a working connection.
 
@@ -126,20 +136,22 @@ bash scripts/test-core.sh
 bash scripts/test-loopback.sh
 bash scripts/test-accessibility.sh
 bash scripts/test-widget.sh
-dist/WriteDock.app/Contents/MacOS/WriteDock --check-widget-state
-dist/WriteDock.app/Contents/MacOS/WriteDock --diagnostics
+dist/Pennie.app/Contents/MacOS/Pennie --check-widget-state
+dist/Pennie.app/Contents/MacOS/Pennie --diagnostics
 ```
 
-The build script creates and verifies an ad-hoc signature. Set `WRITEDOCK_SIGNING_IDENTITY` to your own signing identity to sign with it. Full Xcode environments can also run `swift test`; the standalone scripts provide a dependency-free test harness when Command Line Tools lack XCTest.
+The build script creates and verifies an ad-hoc signature. Set `PENNIE_SIGNING_IDENTITY` to your own signing identity to sign with it, or `PENNIE_APP_DIR` to choose the output path. The earlier `WRITEDOCK_SIGNING_IDENTITY` and `WRITEDOCK_APP_DIR` variables remain supported. Full Xcode environments can also run `swift test`; the standalone scripts provide a dependency-free test harness when Command Line Tools lack XCTest.
+
+Pennie was previously called WriteDock. The bundle identifier and Keychain service retain their original identifiers so existing preferences and saved keys remain accessible. Build and open `dist/Pennie.app` for the updated app; quit the earlier app before switching. A rebuilt ad-hoc-signed app can still require renewed macOS authorization.
 
 The build was compiled and launched on macOS 26.7.1 arm64. Deployment target is macOS 13; other macOS versions and Intel have not been validated. This is a local build, not a notarized distribution.
 
-Preview Nib without Accessibility permission or inference using `dist/WriteDock.app/Contents/MacOS/WriteDock --widget-demo`. This is a disabled, synthetic UI demonstration. Nib artwork is bundled with the application and used for its Finder, Dock, and About icon.
+Preview Pennie without Accessibility permission or inference using `dist/Pennie.app/Contents/MacOS/Pennie --widget-demo`. This is a disabled, synthetic UI demonstration. Pennie artwork is bundled with the application and used for its Finder, Dock, and About icon.
 
 See [the testing guide](docs/VALIDATION.md) for automated checks, Keychain checks, and the manual application integration checklist. To deliberately run all 16 synthetic live backend checks (uses API quota; never captures application text):
 
 ```bash
-dist/WriteDock.app/Contents/MacOS/WriteDock --check-configured-backend
+dist/Pennie.app/Contents/MacOS/Pennie --check-configured-backend
 ```
 
 ### Try the workflow without API usage
@@ -157,4 +169,6 @@ Choose **LiteLLM Inference Hub**, base URL `http://127.0.0.1:8765/v1`, model `mo
 - Suggestions depend on the selected model and need review. Writing goals and dictionary entries are model instructions, not a guaranteed local spelling engine. Truncated, refused, empty, malformed, or unavailable responses are reported without applying them.
 - Passages are limited to 12,000 UTF-16 characters. A source field's Accessibility value is read to check staleness; at most 12,000 UTF-16 characters of context are retained in memory. Larger or inaccessible context makes direct replacement unavailable.
 - Direct replacement requires a single selection, unchanged focus/text/range, a writable Accessibility selection, and enough readable context to verify the edit. It writes only to the selected range. Rich formatting inside the replaced selection may change; review it afterward. Copy deliberately replaces clipboard contents.
-- WriteDock provides writing help on request. Continuous underlines, background suggestions, per-word accept bubbles, plagiarism checking, AI-text detection, authorship tracking, and learned style libraries are not included. It does not install Outlook, Teams, or Slack add-ins.
+- Pennie provides writing help on request. Continuous underlines, background suggestions, per-word accept bubbles, plagiarism checking, AI-text detection, authorship tracking, and learned style libraries are not included. It does not install Outlook, Teams, or Slack add-ins.
+
+For contributors, the [Pennie identity guide](docs/BRAND.md) defines the shared name, character story, and product voice.

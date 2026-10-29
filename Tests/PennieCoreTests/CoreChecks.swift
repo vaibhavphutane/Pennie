@@ -1,7 +1,7 @@
 #if CORE_CHECKS
 // Runs without XCTest, which Apple's standalone Command Line Tools do not ship.
-// swiftc -D CORE_CHECKS -parse-as-library Sources/WriteDockCore/*.swift \
-//   Tests/WriteDockCoreTests/CoreChecks.swift -o /tmp/writedock-core-checks
+// swiftc -D CORE_CHECKS -parse-as-library Sources/PennieCore/*.swift \
+//   Tests/PennieCoreTests/CoreChecks.swift -o /tmp/pennie-core-checks
 import Foundation
 
 private final class CheckProtocol: URLProtocol {
@@ -70,7 +70,7 @@ struct CoreChecks {
             check(request.value(forHTTPHeaderField: "Authorization") == (kind == .anthropic ? nil : "Bearer test-secret"), "authorization header")
             check(request.value(forHTTPHeaderField: "x-api-key") == (kind == .anthropic ? "test-secret" : nil), "Claude authentication isolation")
             check(request.value(forHTTPHeaderField: "anthropic-version") == (kind == .anthropic ? "2026-10-21" : nil), "Claude version header")
-            check(request.value(forHTTPHeaderField: "X-Title") == (kind == .openRouter ? "WriteDock" : nil), "provider headers")
+            check(request.value(forHTTPHeaderField: "X-Title") == (kind == .openRouter ? "Pennie" : nil), "provider headers")
             let body = try JSONSerialization.jsonObject(with: request.httpBody!) as! [String: Any]
             check(body["model"] as? String == "exact/alias", "model ID preservation")
             switch kind {
@@ -112,13 +112,13 @@ struct CoreChecks {
         for kind in BackendKind.allCases {
             let backend = BackendConfig(kind: kind, baseURL: "https://gateway.example/v1", model: "editor")
             for action in WritingAction.allCases {
-                var profile = WritingProfile(); profile.dialect = .british; profile.dictionary = "WriteDock, Nib"
+                var profile = WritingProfile(); profile.dialect = .british; profile.dictionary = "Pennie, OpenRouter"
                 let request = try client().makeRequest(text: "Source stays exact 👩🏽‍💻.", action: action, preferences: "Keep facts", config: backend, apiKey: "test", profile: profile, customInstruction: "Make it warmer", targetLanguage: "French", regenerate: true)
                 let body = try JSONSerialization.jsonObject(with: request.httpBody!) as! [String: Any]
                 let messages = body["messages"] as? [[String:String]]
                 let prompt = (body["instructions"] as? String) ?? (body["system"] as? String) ?? messages![0]["content"]!
                 check(prompt.contains("Selected action: " + action.label) && prompt.contains("another attempt"), "action and regeneration delivered through each provider")
-                check(prompt.contains("British English") && prompt.contains("WriteDock, Nib") && prompt.contains("overrides any conflicting dialect"), "explicit dialect wins over legacy preferences; terminology delivered")
+                check(prompt.contains("British English") && prompt.contains("Pennie, OpenRouter") && prompt.contains("overrides any conflicting dialect"), "explicit dialect wins over legacy preferences; terminology delivered")
                 check(prompt.contains("Make it warmer") == (action == .custom), "custom instruction sent only for custom action")
                 check(prompt.contains("Target language: French") == (action == .translate), "translation language sent only for translation")
                 check(!prompt.contains("If no change is necessary, return the original text unchanged."), "blanket echo instruction removed")

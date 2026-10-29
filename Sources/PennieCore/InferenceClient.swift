@@ -198,7 +198,7 @@ public final class InferenceClient: @unchecked Sendable {
                 input: text, max_output_tokens: 4096, store: false, stream: false))
         default:
             request.setValue("Bearer " + apiKey, forHTTPHeaderField: "Authorization")
-            if config.kind == .openRouter { request.setValue("WriteDock", forHTTPHeaderField: "X-Title") }
+            if config.kind == .openRouter { request.setValue(ProductIdentity.name, forHTTPHeaderField: "X-Title") }
             request.httpBody = try JSONEncoder().encode(CompletionRequest(model: model, messages: [
                 Message(role: "system", content: instruction), Message(role: "user", content: text)
             ], stream: false, max_tokens: 4096))

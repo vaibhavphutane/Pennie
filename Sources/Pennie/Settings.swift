@@ -2,7 +2,7 @@ import AppKit
 import CryptoKit
 import Security
 import SwiftUI
-import WriteDockCore
+import PennieCore
 
 struct ProviderSettings: Codable {
     var baseURL: String
@@ -22,7 +22,7 @@ final class AppSettings: ObservableObject {
     @Published var widgetEnabled = true
     @Published var animateMascot = true
     @Published var pausedWidgetApps: Set<String> = []
-    @Published var widgetStatus = "Switch to Slack, Teams, or Outlook to show Nib."
+    @Published var widgetStatus = "Switch to Slack, Teams, or Outlook to show Pennie."
     static let apps = [("Microsoft Outlook", "com.microsoft.Outlook"), ("Microsoft Teams", "com.microsoft.teams2"), ("Microsoft Teams classic", "com.microsoft.teams"), ("Slack", "com.tinyspeck.slackmacgap"), ("TextEdit (for testing)", "com.apple.TextEdit")]
     struct Saved: Codable {
         var backend: BackendKind
@@ -91,6 +91,7 @@ enum CredentialStore {
         return kind.rawValue + ":" + digest.map { String(format: "%02x", $0) }.joined()
     }
     static func query(_ kind: BackendKind, _ baseURL: String) -> [String: Any] {
+        // Keep the original service so the Pennie rename can reuse saved credentials.
         [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: "local.WriteDock.backend", kSecAttrAccount as String: account(kind, baseURL)]
     }
     static func read(_ kind: BackendKind, _ baseURL: String) throws -> String {
@@ -187,7 +188,14 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("WriteDock Settings").font(.title2.bold())
+                HStack(spacing: 12) {
+                    PennieMascot(size: 48, animated: false)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Pennie Settings").font(.title2.bold())
+                        Text(ProductIdentity.tagline).foregroundStyle(.secondary)
+                    }
+                }
+                Text(ProductIdentity.story).font(.callout).foregroundStyle(.secondary)
                 GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
                         Picker("Active backend", selection: $settings.backend) {
@@ -249,7 +257,7 @@ struct SettingsView: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }.padding(10).frame(maxWidth: .infinity, alignment: .leading)
                 }
-                GroupBox("Nib, your writing companion") {
+                GroupBox("Pennie beside your words") {
                     VStack(alignment: .leading, spacing: 12) {
                         Label(accessibilityTrusted ? "Accessibility access is enabled" : "Accessibility access is needed to capture text",
                               systemImage: accessibilityTrusted ? "checkmark.circle.fill" : "exclamationmark.circle")
@@ -258,14 +266,14 @@ struct SettingsView: View {
                             Button("Enable Accessibility…") { AccessibilityBridge.requestPermission() }
                             Button("Check again") { accessibilityTrusted = AccessibilityBridge.isTrusted }
                         }.disabled(previewOnly)
-                        Toggle("Show floating widget in supported apps", isOn: $settings.widgetEnabled)
-                        Toggle("Animate Nib", isOn: $settings.animateMascot)
+                        Toggle("Show Pennie beside supported editors", isOn: $settings.widgetEnabled)
+                        Toggle("Animate Pennie", isOn: $settings.animateMascot)
                         if !settings.pausedWidgetApps.isEmpty {
-                            Button("Resume Nib in paused apps (\(settings.pausedWidgetApps.count))") {
+                            Button("Resume Pennie in paused apps (\(settings.pausedWidgetApps.count))") {
                                 settings.pausedWidgetApps.removeAll(); persist()
                             }
                         }
-                        Text("Nib follows a detected editor. If the editor cannot be detected, look in the lower-right corner of the display. Click Nib for capture guidance or open the editor to paste text. An API key is not needed to show Nib.")
+                        Text("Pennie follows a detected editor. If the editor cannot be detected, look in the lower-right corner of the display. Click Pennie for capture guidance or open the editor to paste text. An API key is not needed to show Pennie.")
                             .font(.caption).foregroundStyle(.secondary)
                         Text(settings.widgetStatus).font(.callout).fixedSize(horizontal: false, vertical: true)
                     }.padding(10).frame(maxWidth: .infinity, alignment: .leading)
@@ -302,7 +310,7 @@ struct SettingsView: View {
                         .lineLimit(3...6).modifier(SettingsInput())
                 }
                 Toggle("Place the full editor near the selection when possible", isOn: $settings.nearSelection)
-                Text("Select text, then click Nib or press ⌘⇧G. Capture stays on this Mac until you press Send. Your backend receives the preview text, action, custom request or target language, goals, dictionary, and preferences. Remote endpoints require HTTPS; localhost may use HTTP.")
+                Text("Select text, then click Pennie or press ⌘⇧G. Review your words and choose the action button, such as Fix grammar, to send a request. Your model receives the preview text, action, custom request or target language, goals, dictionary, and preferences. Remote endpoints require HTTPS; localhost may use HTTP.")
                     .font(.caption).foregroundStyle(.secondary)
             }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -377,7 +385,7 @@ final class SettingsPreviewDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let settings = AppSettings(loadSaved: false)
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 660, height: 760), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-        window?.title = "WriteDock Settings Preview"
+        window?.title = "Pennie Settings Preview"
         window?.contentView = NSHostingView(rootView: SettingsView(settings: settings, previewOnly: true))
         window?.center(); window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)

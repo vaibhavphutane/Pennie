@@ -1,8 +1,8 @@
 import AppKit
 import SwiftUI
-import WriteDockCore
+import PennieCore
 
-/// Shared action catalog: the editor and Nib expose exactly the same operations.
+/// Shared action catalog: the editor and Pennie expose exactly the same operations.
 struct WritingActionPicker: View {
     @ObservedObject var state: EditorState
     var body: some View {
@@ -71,8 +71,8 @@ final class WritingPreviewDelegate: NSObject, NSApplicationDelegate {
         }
         state.status = "Local UI preview. Inference and app capture are disabled."
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 740), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-        window?.title = "WriteDock Writing Preview"
-        if args.contains("--preview-nib") {
+        window?.title = "Pennie Writing Preview"
+        if args.contains("--preview-companion") || args.contains("--preview-nib") {
             window?.setContentSize(NSSize(width: 368, height: 610))
             window?.contentView = NSHostingView(rootView: WidgetCard(state: state, settings: settings, demo: false, close: {}, expand: {}, configure: {}, pause: {}))
         } else {
@@ -83,7 +83,7 @@ final class WritingPreviewDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 if let view = self.window?.contentView, let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) {
                     view.cacheDisplay(in: view.bounds, to: bitmap)
-                    let suffix = args.contains("--preview-nib") ? "nib" : "editor"
+                    let suffix = (args.contains("--preview-companion") || args.contains("--preview-nib")) ? "companion" : "editor"
                     let url = URL(fileURLWithPath: "docs/evidence/writing-\(suffix)-preview.png")
                     try? bitmap.representation(using: .png, properties: [:])?.write(to: url)
                 }

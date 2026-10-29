@@ -63,7 +63,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/health":
-            self.reply(200, {"fixture": "WriteDock mock", "real_inference": False})
+            self.reply(200, {"fixture": "Pennie mock", "real_inference": False})
         else:
             self.reply(404, {"error": {"code": "not_found"}})
 
@@ -119,7 +119,7 @@ class Handler(BaseHTTPRequestHandler):
         if payload.get("model") != "mock-editor":
             self.reply(404, {"error": {"code": "model_not_found"}})
             return
-        if mode in ["openRouter", "liteLLM", "openAI", "anthropic"] and self.headers.get("X-Title") != ("WriteDock" if mode == "openRouter" else None):
+        if mode in ["openRouter", "liteLLM", "openAI", "anthropic"] and self.headers.get("X-Title") != ("Pennie" if mode == "openRouter" else None):
             self.reply(400, {"error": {"code": "wrong_provider_headers"}})
             return
         text = " " if mode == "empty" else edit_sample(original, instruction)
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     port = server.server_address[1]
     if args.port_file:
         Path(args.port_file).write_text(str(port), encoding="ascii")
-    print(f"WriteDock deterministic mock listening at http://127.0.0.1:{port}/v1", flush=True)
+    print(f"Pennie deterministic mock listening at http://127.0.0.1:{port}/v1", flush=True)
     print("Model: mock-editor; test key: local-test. No real inference; no request logging.", flush=True)
     try:
         server.serve_forever()
