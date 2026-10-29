@@ -30,7 +30,7 @@ Write like a thoughtful colleague: warm, brief, practical, and clear about what 
 | Working | Working on your words… |
 | Review | Review the suggestion, then accept or copy it. |
 
-Use plain labels for controls: **Your words**, **Writing action**, **Suggestion**, **Show changes**, **Accept**, **Replace selection**, and **Copy**. Keep error messages specific and useful.
+Use plain labels for controls: **Your words**, **Writing action**, **Suggestion**, **Show changes**, **Accept**, and **Copy**. Accept updates the original text box in one step. Keep error messages specific and useful.
 
 ## Writing actions
 

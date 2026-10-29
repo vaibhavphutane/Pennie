@@ -20,7 +20,7 @@ The mint companion beside your editor and the app in your Dock share the same na
 
 ## Writing help where you work
 
-Pennie appears beside supported editors in Outlook, Teams, and Slack. Select a passage, ask for help, and review the suggestion alongside your original. You can also paste text into the full editor and copy the result back into any app.
+Pennie appears beside supported editors in Outlook, Teams, and Slack. Click Pennie to load the draft from your text box, ask for help, and accept the suggestion to update that same box. Select a passage first when you only want to edit part of the draft. You can also paste text into the full editor and copy the result back into any app.
 
 The compact companion and full editor offer the same **16 writing actions**:
 
@@ -44,7 +44,7 @@ open dist/Pennie.app
 
 For regular use, copy the app to `~/Applications` or `/Applications` **before** granting Accessibility permission. Open **Settings** (`⌘,`), choose **Enable Accessibility…**, and enable that exact app in **System Settings → Privacy & Security → Accessibility**. Quit and reopen Pennie if needed. Manual copy/paste works without this permission.
 
-Next, connect your model below and select a passage to try your first edit.
+Next, connect your model below and open Pennie from a text box to try your first edit.
 
 ## Bring your own model
 
@@ -83,15 +83,15 @@ Non-secret settings are stored locally in macOS UserDefaults. Source context use
 
 ## Make your first edit
 
-1. **Capture.** Select a passage in Outlook, Teams, or Slack, then click Pennie. Press **⌘⇧G** to capture into the full editor, or use **Paste text** for text you copied yourself.
+1. **Capture.** Click the text box in Outlook, Teams, or Slack, then click Pennie. Your existing draft loads automatically. Select a passage first to edit only that part. Press **⌘⇧G** to capture the draft or selection into the full editor, or use **Paste text** for text you copied yourself.
 2. **Choose.** Review **Your words** and pick a **Writing action**, such as Grammar & spelling, Make concise, or Professional tone.
 3. **Ask Pennie.** Check the displayed endpoint and model, then press the button for your task: **Fix grammar**, **Make concise**, **Make professional**, or another selected action. This sends the request to your configured model.
-4. **Review.** Read the result. **Show changes** highlights additions in green and removals with red strikethrough. Copy and Replace use the clean result.
-5. **Apply.** Choose **Accept**, then **Replace selection** for a verified edit in a supported editor, or **Copy** and paste it yourself. **Dismiss** discards the suggestion.
+4. **Review.** Read the result. **Show changes** highlights additions in green and removals with red strikethrough. Copy and Accept use the clean result.
+5. **Apply.** Choose **Accept** to update the original text box directly. Pennie rechecks the source and verifies the edit. If you captured a selection, only that passage is replaced. **Copy** lets you paste the result yourself; **Dismiss** discards the suggestion.
 
-Accept approves a suggestion locally; replacement is a separate action. Pennie never sends mail or chat messages. Tone insights are a separate report and cannot be accepted or used as replacement text.
+Accept applies the suggestion in one step when the preview is still linked to its source text box. For pasted or edited previews, use Copy to move the result into your app. Pennie never sends mail or chat messages. Tone insights are a separate report and cannot be accepted or used as replacement text.
 
-If you edit or redact the captured preview, direct replacement is disabled because it no longer matches the original selection. Use Copy instead. Clicking Pennie with no selection can preview a readable draft; this also supports Copy only. Editors that do not expose a writable selection use the same manual copy/paste workflow.
+If you edit or redact the captured preview, direct replacement is disabled because it no longer matches the original selection. Use Copy instead. Clicking Pennie with no selection captures the whole readable draft for direct replacement. Editors that do not expose a supported write method use the manual copy/paste workflow.
 
 ## Settings and troubleshooting
 
@@ -120,7 +120,7 @@ Settings shows Pennie's own Accessibility state and widget status. Permission gr
 <details>
 <summary>Unchanged text or an unexpected result</summary>
 
-Pennie labels identical output **UNCHANGED TEXT** and disables Accept/Replace. Grammar checks may correctly leave clean text alone. Choose **Improve writing** or **Rephrase** when you want a different version. An echo from a rewrite action is reported as incomplete; try **Regenerate** or another model.
+Pennie labels identical output **UNCHANGED TEXT** and disables Accept. Grammar checks may correctly leave clean text alone. Choose **Improve writing** or **Rephrase** when you want a different version. An echo from a rewrite action is reported as incomplete; try **Regenerate** or another model.
 
 Use **Test correction with sample text** in Settings to check the selected backend. Missing keys, missing model IDs, authentication failures, rate limits, unavailable models, and timeouts are reported explicitly. A saved key alone does not confirm a working connection.
 
@@ -168,7 +168,7 @@ Choose **LiteLLM Inference Hub**, base URL `http://127.0.0.1:8765/v1`, model `mo
 
 - Suggestions depend on the selected model and need review. Writing goals and dictionary entries are model instructions, not a guaranteed local spelling engine. Truncated, refused, empty, malformed, or unavailable responses are reported without applying them.
 - Passages are limited to 12,000 UTF-16 characters. A source field's Accessibility value is read to check staleness; at most 12,000 UTF-16 characters of context are retained in memory. Larger or inaccessible context makes direct replacement unavailable.
-- Direct replacement requires a single selection, unchanged focus/text/range, a writable Accessibility selection, and enough readable context to verify the edit. It writes only to the selected range. Rich formatting inside the replaced selection may change; review it afterward. Copy deliberately replaces clipboard contents.
+- Direct replacement requires the original text box, unchanged text and selection/caret, and enough readable context to verify the edit. A captured selection is replaced through a writable Accessibility selection. A captured whole draft is selected and replaced, or written through the field’s Accessibility value when selection writes are unavailable. Pennie verifies the resulting text and caret and never retries an uncertain write. Rich formatting in replaced text may change; review it afterward. Copy deliberately replaces clipboard contents.
 - Pennie provides writing help on request. Continuous underlines, background suggestions, per-word accept bubbles, plagiarism checking, AI-text detection, authorship tracking, and learned style libraries are not included. It does not install Outlook, Teams, or Slack add-ins.
 
 For contributors, the [Pennie identity guide](docs/BRAND.md) defines the shared name, character story, and product voice.

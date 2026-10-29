@@ -21,9 +21,9 @@ Full Xcode installations can additionally run `swift test`. The standalone Comma
 | Core | Four backend request formats, all 16 writing actions, goals and dictionary guidance, custom instructions, translation language, regeneration, input limits, error handling, cancellation, and redirect refusal |
 | Result review | Unchanged output and tone-report classification; exact reconstruction of source and result from Unicode-aware diff spans; bounded work for long passages |
 | Loopback HTTP | Actual URLSession requests to a temporary local server, five deterministic writing fixtures, provider-specific authentication and model routing, and unsuccessful responses |
-| Replacement guards | UTF-16 ranges, grapheme boundaries, surrounding text, stale selections, invalid and overflowing ranges |
+| Capture and replacement | Synthetic editors exercise automatic draft capture, missing selection ranges, selected passages, whole-draft writes, source/focus/caret changes, protected fields, cancellation, and uncertain writes; UTF-16 and grapheme guards preserve surrounding text |
 | Widget placement | Multiple displays, edge placement, clipping, offscreen and invalid frames, and corner fallback |
-| Widget state | Source/action/settings changes invalidate results, cancellation, nonactivating panels, resource loading, and preventing unchanged text or analysis reports from being applied |
+| Widget state | Source/action/settings changes invalidate results, cancellation, nonactivating panels, resource loading, one-step Accept with duplicate-click protection, retaining source targets when expanding, failed writes, and preventing unchanged text or analysis reports from being applied |
 | Settings migration | Older provider settings remain readable; provider configurations remain independent |
 
 The loopback script starts a server on an OS-assigned port and stops only its own child process. Its deterministic responses validate transport behavior, not model quality.
@@ -60,17 +60,17 @@ Use synthetic text in unsent drafts:
 | Teams | Unsent draft in a chat with yourself |
 | Slack | Unsent draft in your own conversation |
 
-1. Type `This are a example. I has recieved teh message.` and select the passage.
-2. Confirm Pennie appears near the editor or in the display's lower-right corner. Click Pennie, or press **⌘⇧G**, and check that the preview matches the selection.
+1. Type `This are a example. I has recieved teh message.` Leave the caret in the text box without selecting text.
+2. Confirm Pennie appears near the editor or in the display's lower-right corner. Click Pennie, or press **⌘⇧G**, and check that the existing draft loads automatically. Also test **Open editor** from the compact preview; it must keep the source target.
 3. Choose **Grammar & spelling**, then **Fix grammar**. Review the result and **Show changes**. Changing the picker alone must not send a request.
-4. Choose **Accept**, then **Replace selection**. Verify the corrected text, unchanged surrounding text, focus, and caret placement. Do not send the draft.
-5. Repeat with **Rephrase**, a custom editing request, and translation. The primary button should read **Rephrase text**, **Rewrite my way**, and **Translate text**, respectively. **Tone insights** should show **Analyze tone**, and its report must not enable Accept or Replace. Confirm the same labels in the companion and full editor, with the destination still visible.
+4. Choose **Accept** once. Verify that the original text box updates immediately, with the corrected text, focus, and caret placement. No second Replace action should be needed. Do not send the draft.
+5. Repeat with **Rephrase**, a custom editing request, and translation. The primary button should read **Rephrase text**, **Rewrite my way**, and **Translate text**, respectively. **Tone insights** should show **Analyze tone**, and its report must not enable Accept. Confirm the same labels in the companion and full editor, with the destination still visible.
 6. Check Copy and Dismiss. Correct source text may produce an unchanged result; it must not be offered as an applicable correction.
 7. Capture again, then change the source selection or document before attempting replacement. Confirm stale replacement is refused.
 8. Edit or redact the preview. Confirm direct replacement becomes unavailable and Copy remains usable after inference.
-9. Click Pennie with no selection. A readable draft can be previewed, but replacement must stay unavailable.
+9. Select just `teh message` within the draft, then capture and accept a correction. Only that passage should change; preserve the surrounding text. Repeat no-selection capture through the shortcut and through the corner launcher when bounds are unavailable.
 
-Repeat with emoji, combining characters, line breaks, lists, bold text, and links. Text replacement alone does not guarantee preservation of rich formatting. When the editor does not expose a writable selection, use manual copy/paste and review the result.
+Repeat with emoji, combining characters, line breaks, lists, bold text, and links. Text replacement alone does not guarantee preservation of rich formatting. When the editor does not expose a supported write method, Accept must report the limitation and leave the result available for Copy. Check failed or unconfirmed writes without retrying automatically.
 
 ## Widget and failure checks
 

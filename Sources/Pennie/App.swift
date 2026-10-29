@@ -22,7 +22,7 @@ final class EditorState: ObservableObject {
     @Published var targetLanguage = "English" { didSet { if oldValue != targetLanguage { resetResult() } } }
     @Published var showChanges = false
     @Published var hasResponse = false
-    @Published var status = "Select text in Outlook, Teams, or Slack and press ⌘⇧G, or paste text here."
+    @Published var status = "Click a text box in Outlook, Teams, or Slack, then open Pennie or press ⌘⇧G."
     @Published var busy = false
     @Published var replacing = false
     @Published var origin = "Scratchpad"
@@ -30,11 +30,12 @@ final class EditorState: ObservableObject {
     var capture: TextCapture?
     var request: Task<Void, Never>?
     private var generation = UUID()
-    private let bridge = AccessibilityBridge()
+    private let bridge: any TextAccess
     private var settingsSubscriptions = Set<AnyCancellable>()
-    init(settings: AppSettings, allowsInference: Bool = true) {
+    init(settings: AppSettings, allowsInference: Bool = true, bridge: (any TextAccess)? = nil) {
         self.settings = settings
         self.allowsInference = allowsInference
+        self.bridge = bridge ?? AccessibilityBridge()
         Publishers.CombineLatest4(settings.$backend, settings.$openRouter, settings.$liteLLM, settings.$preferences)
             .dropFirst().sink { [weak self] _ in self?.resetResult() }.store(in: &settingsSubscriptions)
         Publishers.CombineLatest(settings.$openAI, settings.$anthropic)
@@ -54,34 +55,24 @@ final class EditorState: ObservableObject {
         return accepted ? "ACCEPTED SUGGESTION" : "SUGGESTION"
     }
 
-    func captureSelection() -> CGRect? {
+    func captureText(from anchor: EditorAnchor? = nil) -> CGRect? {
+        guard !busy else { return nil }
         resetResult()
         do {
-            let value = try bridge.capture(allowedBundleIDs: settings.allowedApps)
+            let value = try bridge.capture(allowedBundleIDs: settings.allowedApps, from: anchor)
             capture = value; source = value.text; origin = value.appName
-            status = "Review the exact text below. Nothing has been sent."
+            status = value.isWholeDraft
+                ? "Draft loaded. Review your words, then choose a writing action. Accept will update this text box."
+                : "Selection loaded. Review your words, then choose a writing action. Accept will update this selection."
             return value.bounds
         } catch {
             capture = nil; source = ""; origin = "Scratchpad"
-            status = error.localizedDescription + " Copy the selection yourself, then use Paste text."
+            status = error.localizedDescription
             return nil
         }
     }
     func captureFromWidget(_ anchor: EditorAnchor) {
-        guard !busy else { return }
-        resetResult(); capture = nil
-        do {
-            guard let current = bridge.focusedEditor(allowedBundleIDs: settings.allowedApps), current.isSameField(as: anchor) else { throw CaptureError.stale }
-            do {
-                let selected = try bridge.capture(allowedBundleIDs: settings.allowedApps)
-                capture = selected; source = selected.text; origin = selected.appName
-                status = "Selection captured. Review it before sending."
-            } catch CaptureError.noSelection {
-                source = try bridge.readDraft(from: anchor, allowedBundleIDs: settings.allowedApps)
-                origin = anchor.appName + " · draft"
-                status = "Draft preview. Copy the result back, or select text in your app for direct replacement."
-            }
-        } catch { source = ""; origin = anchor.appName; status = error.localizedDescription }
+        _ = captureText(from: anchor)
     }
     func resetResult() {
         guard !replacing else { return }
@@ -128,7 +119,10 @@ final class EditorState: ObservableObject {
                 ? "The model returned unchanged text. There is no edit to apply. If you expected a correction, try Improve writing, Regenerate, or the sample test in Settings."
                 : "The model echoed the input without completing this action. Nothing was changed. Try Regenerate or another model; Settings has a sample test."
         case .analysis: status = "Tone report ready. This is feedback, not replacement text."
-        case .changed: status = "Review the result or Show changes, then Accept and Replace. Your source app has not changed."
+        case .changed:
+            status = capture == nil
+                ? "Review the result or Show changes, then Copy to use it in your app."
+                : "Review the result or Show changes, then Accept to update the original text box."
         }
     }
     func cancel() {
@@ -140,25 +134,32 @@ final class EditorState: ObservableObject {
         status = "Suggestion copied. Paste into your chosen selection and review its formatting."
     }
     func accept() {
-        guard canApplyResult, !busy else { return }
-        accepted = true
-        status = capture == nil ? "Accepted. Use Copy to paste it into your app." : "Accepted. Replace will recheck the original selection before applying."
-    }
-    func replace() {
-        guard let capture, canApplyResult, accepted, !busy else { return }
+        guard canApplyResult, !busy, !accepted else { return }
+        guard let capture else {
+            accepted = true
+            status = "Accepted. Use Copy to paste it into your app."
+            return
+        }
         guard settings.allowedApps.contains(capture.bundleID) else {
             self.capture = nil; status = "Capture is disabled for this application. Use Copy if you want to paste manually."
             return
         }
         let replacement = suggestion
         busy = true; replacing = true
+        status = "Updating the original text box…"
+        // A nonactivating writing panel may hold keyboard focus while the host stays frontmost.
+        NSApp.keyWindow?.resignKey()
         request = Task { [weak self] in
             guard let self else { return }
             do {
                 try await self.bridge.replace(capture: capture, with: replacement)
                 self.capture = nil
-                self.status = "Replacement and cursor position verified. Review rich formatting in the source app."
-            } catch { self.capture = nil; self.status = error.localizedDescription }
+                self.accepted = true
+                self.status = "Updated the original text box. Review the text and formatting in \(capture.appName)."
+            } catch {
+                // Never reapply an uncertain write. Keep the result available for Copy.
+                self.capture = nil; self.accepted = false; self.status = error.localizedDescription
+            }
             self.replacing = false; self.busy = false; self.request = nil
         }
     }
@@ -183,7 +184,7 @@ struct EditorView: View {
             HStack {
                 Label(state.origin, systemImage: "text.cursor").font(.caption.weight(.medium))
                 Spacer()
-                Text("⌘⇧G · Capture selection").font(.caption).foregroundStyle(.secondary)
+                Text("⌘⇧G · Capture draft or selection").font(.caption).foregroundStyle(.secondary)
                 Button("Paste text") { state.paste() }.disabled(state.busy)
             }
             HStack(alignment: .top, spacing: 16) {
@@ -212,8 +213,7 @@ struct EditorView: View {
                         Toggle("Show changes · added / removed", isOn: $state.showChanges).font(.caption)
                     }
                     HStack {
-                        Button("Accept") { state.accept() }.disabled(!state.canApplyResult || state.busy || state.accepted)
-                        Button("Replace selection") { state.replace() }.disabled(state.capture == nil || !state.accepted || state.busy || !state.canApplyResult)
+                        Button(state.accepted ? "Accepted ✓" : "Accept") { state.accept() }.disabled(!state.canApplyResult || state.busy || state.accepted)
                         Button("Copy") { state.copy() }.disabled(state.suggestion.isEmpty || state.busy)
                         Button("Dismiss") { state.resetResult(); state.status = "Suggestion dismissed." }.disabled(state.suggestion.isEmpty || state.busy)
                     }.controlSize(.small)
@@ -292,7 +292,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuItem.button?.image = NSImage(systemSymbolName: "pencil.tip", accessibilityDescription: ProductIdentity.name)
         let statusMenu = NSMenu()
         statusMenu.addItem(withTitle: "Open Pennie", action: #selector(show), keyEquivalent: "").target = self
-        statusMenu.addItem(withTitle: "Capture selection (⌘⇧G)", action: #selector(capture), keyEquivalent: "").target = self
+        statusMenu.addItem(withTitle: "Capture draft or selection (⌘⇧G)", action: #selector(capture), keyEquivalent: "").target = self
         statusMenu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: "").target = self
         statusMenu.addItem(.separator()); statusMenu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
         menuItem.menu = statusMenu
@@ -347,7 +347,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func capture() {
         if state.busy { return }
         floatingWidget?.dismiss(clear: false)
-        let bounds = state.captureSelection()
+        let bounds = state.captureText()
         if settings.nearSelection, let bounds, let screen = NSScreen.screens.first(where: { screen in
             guard let first = NSScreen.screens.first else { return false }
             let cocoaPoint = NSPoint(x: bounds.midX, y: first.frame.maxY - bounds.midY)
@@ -409,7 +409,11 @@ struct PennieApp {
         }
         if CommandLine.arguments.contains("--check-widget-state") {
             _ = NSApplication.shared
-            WidgetStateChecks.run()
+            Task { @MainActor in
+                await WidgetStateChecks.run()
+                exit(0)
+            }
+            NSApp.run()
             return
         }
         if CommandLine.arguments.contains("--render-widget-preview") {

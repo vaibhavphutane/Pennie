@@ -24,7 +24,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>NSPrincipalClass</key><string>NSApplication</string>
 <key>NSHighResolutionCapable</key><true/>
-<key>NSAccessibilityUsageDescription</key><string>Pennie sits beside supported editors to help with your writing. It reads text only when you click the companion or invoke capture, and replaces a selection only after your approval.</string>
+<key>NSAccessibilityUsageDescription</key><string>Pennie sits beside supported editors to help with your writing. It reads text only when you click the companion or invoke capture, and updates the original draft or selection only when you choose Accept.</string>
 <key>NSHumanReadableCopyright</key><string>Pennie — Say it like you.</string>
 </dict></plist>
 PLIST

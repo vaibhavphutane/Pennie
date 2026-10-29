@@ -128,7 +128,6 @@ struct WidgetCard: View {
                 }.font(.system(size: 11)).foregroundStyle(ink)
                 HStack(spacing: 8) {
                     Button(state.accepted ? "Accepted ✓" : "Accept") { state.accept() }.disabled(!state.canApplyResult || state.accepted || state.busy || demo)
-                    Button("Replace") { state.replace() }.disabled(!state.accepted || state.capture == nil || state.busy || !state.canApplyResult || demo)
                     Button("Copy") { state.copy() }.disabled(state.busy || demo)
                     Spacer(minLength: 0)
                     Button("Dismiss") { state.resetResult(); state.status = "Suggestion dismissed." }.disabled(state.busy || demo)
@@ -332,8 +331,8 @@ final class FloatingWidgetController {
                   current.isSameField(as: anchor) else { refresh(); return }
             state.captureFromWidget(current)
         } else {
-            // Explicit click only. This may capture a selection even if its editor has no usable bounds.
-            _ = state.captureSelection()
+            // Explicit click only. Capture the draft even if its editor has no usable bounds.
+            _ = state.captureText()
             if state.capture == nil { state.origin = app.localizedName ?? bundle }
         }
         guard let screen = FloatingPlacement.visibleScreen(for: bubble.frame, screens: NSScreen.screens.map(\.visibleFrame)) else { hide(); return }
@@ -397,7 +396,22 @@ final class WidgetDemoDelegate: NSObject, NSApplicationDelegate {
 
 @MainActor
 enum WidgetStateChecks {
-    static func run() {
+    private final class FixtureTextAccess: TextAccess {
+        let snapshot = TextCapture(text: "This are a draft.", appName: "Fixture editor", bundleID: "com.tinyspeck.slackmacgap",
+            bounds: nil, element: AXUIElementCreateApplication(987_001), processID: 987_001,
+            range: CFRange(location: 0, length: 17), context: "This are a draft.",
+            originalSelection: CFRange(location: 4, length: 0), isWholeDraft: true)
+        var replacements = [String]()
+        var failure: CaptureError?
+        func capture(allowedBundleIDs: Set<String>, from anchor: EditorAnchor?) throws -> TextCapture { snapshot }
+        func replace(capture: TextCapture, with replacement: String) async throws {
+            replacements.append(replacement)
+            await Task.yield()
+            if let failure { throw failure }
+        }
+    }
+
+    static func run() async {
         var count = 0
         func check(_ condition: Bool, _ name: String) { precondition(condition, name); count += 1 }
         let settings = AppSettings(loadSaved: false)
@@ -458,6 +472,44 @@ enum WidgetStateChecks {
         check(controller.hasNonactivatingPanels, "panels start hidden and do not activate or monitor other apps")
         controller.dismiss()
         check(state.source.isEmpty && state.suggestion.isEmpty, "closing clears draft and suggestion")
+
+        let fixture = FixtureTextAccess()
+        let captured = EditorState(settings: settings, allowsInference: false, bridge: fixture)
+        let anchor = EditorAnchor(appName: fixture.snapshot.appName, bundleID: fixture.snapshot.bundleID,
+            processID: fixture.snapshot.processID, bounds: .zero, element: fixture.snapshot.element)
+        captured.captureFromWidget(anchor)
+        check(captured.source == fixture.snapshot.text && captured.capture?.isWholeDraft == true && fixture.replacements.isEmpty,
+              "opening beside an editor loads its draft and retains the writeback target")
+        let capturedController = FloatingWidgetController(state: captured, settings: settings, openEditor: {}, openSettings: {})
+        capturedController.dismiss(clear: false)
+        check(captured.capture != nil && captured.source == fixture.snapshot.text, "expanding into the full editor keeps the original target")
+        captured.receive("This is a draft.")
+        captured.accept(); captured.accept()
+        check(captured.busy && captured.replacing && !captured.accepted, "Accept starts applying and blocks duplicate clicks")
+        await captured.request?.value
+        check(fixture.replacements == ["This is a draft."] && captured.accepted && captured.capture == nil && !captured.busy,
+              "one Accept writes the suggestion once and acknowledges success after verification")
+        captured.accept()
+        check(fixture.replacements.count == 1, "an accepted result cannot be written twice")
+
+        _ = captured.captureText()
+        check(captured.source == fixture.snapshot.text && captured.capture != nil, "shortcut capture also keeps the whole-draft target")
+        captured.receive("This is a draft."); fixture.failure = .stale
+        captured.accept(); await captured.request?.value
+        check(!captured.accepted && captured.capture == nil && !captured.busy && captured.suggestion == "This is a draft." &&
+              captured.status == CaptureError.stale.localizedDescription, "failed Accept retains copyable output and never claims success")
+
+        _ = captured.captureText()
+        captured.source = "An edited preview."
+        captured.receive("A polished preview."); captured.accept()
+        check(captured.capture == nil && captured.accepted && fixture.replacements.count == 2,
+              "edited or pasted previews cannot overwrite a captured draft")
+        _ = captured.captureText()
+        captured.receive("This is a draft.")
+        settings.allowedApps.remove(fixture.snapshot.bundleID)
+        captured.accept()
+        check(!captured.accepted && captured.capture == nil && fixture.replacements.count == 2,
+              "disabling the source app prevents Accept from writing")
         print("PASS: \(count) widget state and resource checks; no AX reads, network requests, or saved-setting changes.")
     }
 }

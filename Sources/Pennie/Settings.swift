@@ -310,7 +310,7 @@ struct SettingsView: View {
                         .lineLimit(3...6).modifier(SettingsInput())
                 }
                 Toggle("Place the full editor near the selection when possible", isOn: $settings.nearSelection)
-                Text("Select text, then click Pennie or press ⌘⇧G. Review your words and choose the action button, such as Fix grammar, to send a request. Your model receives the preview text, action, custom request or target language, goals, dictionary, and preferences. Remote endpoints require HTTPS; localhost may use HTTP.")
+                Text("Click a text box, then click Pennie or press ⌘⇧G to load its draft. Select a passage first to edit only that part. Accept updates the original text box. Review your words and choose the action button, such as Fix grammar, to send a request. Your model receives the preview text, action, custom request or target language, goals, dictionary, and preferences. Remote endpoints require HTTPS; localhost may use HTTP.")
                     .font(.caption).foregroundStyle(.secondary)
             }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
         }
