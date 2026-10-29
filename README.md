@@ -1,84 +1,124 @@
 # WriteDock
 
-A native macOS writing assistant with **Nib**, a floating writing companion, a source/suggestion preview, and configurable OpenRouter, LiteLLM Inference Hub, OpenAI, and Claude (Anthropic) backends. The desktop UI and editing integration run locally; the selected backend performs inference.
+**Your writing assistant. Your model. No extra writing subscription.**
 
-## Run
+WriteDock brings grammar fixes, clearer sentences, rewrites, and tone adjustments to your Mac—the everyday writing tasks. Connect your own model through **OpenRouter, OpenAI, LiteLLM Inference Hub, Claude (Anthropic), or another compatible API gateway**.
 
-Build from a fresh clone, then open the app:
+Use the model access you already have. WriteDock adds no subscription of its own: you supply the endpoint, model, and API key. Your provider's API usage charges and access requirements still apply; check whether your existing plan includes API access.
+
+The app runs locally and sends the text you choose directly to your configured endpoint. **There is no WriteDock cloud service in between.** You control what to send, which model receives it, and whether to apply the result.
+
+## Writing help where you work
+
+Meet **Nib**, the floating writing companion that appears beside supported editors in Outlook, Teams, and Slack. Select a passage, ask for help, and review the suggestion alongside your original. You can also paste text into WriteDock and copy the result back into any app.
+
+Both Nib and the full editor offer **16 writing actions**:
+
+| What you need | What WriteDock can do |
+| --- | --- |
+| Polish a draft | Fix grammar, spelling, and punctuation; improve writing; rephrase; improve clarity; shorten or expand |
+| Find the right tone | Make writing professional, conversational, confident, empathetic, or persuasive |
+| Reshape your text | Summarize, turn prose into bullet points, translate into a language you choose, or follow a custom editing request |
+| Understand how it reads | Get a tone report with supporting examples and reader-impact guidance |
+
+Set your preferred English dialect, audience, formality, and personal dictionary in **Settings → Writing goals & personal dictionary**. American, British, Australian, and Canadian English are supported as model instructions. Your chosen action takes precedence over conflicting defaults.
+
+## Get started
+
+Build from a fresh clone on macOS with Apple's Command Line Tools installed:
 
 ```bash
 bash scripts/build-app.sh
 open dist/WriteDock.app
 ```
 
-Build outputs in `dist/` are local artifacts and are not committed. If you already have the local build, open `dist/WriteDock.app` directly.
+For regular use, copy the app to `~/Applications` or `/Applications` **before** granting Accessibility permission. Open **Settings** (`⌘,`), choose **Enable Accessibility…**, and enable that exact app in **System Settings → Privacy & Security → Accessibility**. Quit and reopen WriteDock if needed. Manual copy/paste works without this permission.
 
-For a stable installation, copy the app to `~/Applications` or `/Applications` **before** granting Accessibility permission. In WriteDock Settings, choose **Enable Accessibility…**, then enable that exact app in **System Settings → Privacy & Security → Accessibility**. Quit and reopen WriteDock if macOS does not recognize the change. The app includes Nib as its Finder/Dock/About icon. The local build is ad-hoc signed; rebuilding can require removing and re-adding its Accessibility entry. A developer signing identity provides a more stable identity across updates.
+Next, connect your model below and select a passage to try your first edit.
 
-The build was compiled and launched on macOS 26.7.1 arm64. Deployment target is macOS 13; other macOS versions and Intel have not been validated. This is a local build, not a notarized distribution.
+## Bring your own model
 
-## Configure inference
+Choose the provider or gateway that fits your workflow: a personal API account, your organization's inference hub, or a local model server with a compatible API. You can change providers and models in Settings without restarting the app or changing code.
 
-Open **Settings** (`⌘,`). Each backend retains its own URL/model and Keychain credential. Select the active backend, fill in its settings, and press **Save settings & key**. Switching the active backend requires no restart or code change.
+| Provider or gateway | Select in Settings | API base URL | API used |
+| --- | --- | --- | --- |
+| OpenRouter | OpenRouter | `https://openrouter.ai/api/v1` | Chat Completions |
+| OpenAI | OpenAI | `https://api.openai.com/v1` | Responses |
+| LiteLLM Inference Hub | LiteLLM Inference Hub | Your gateway's API prefix | Chat Completions |
+| Claude (Anthropic) | Claude (Anthropic) | `https://api.anthropic.com/v1` | Messages |
+| Another compatible gateway or local server | LiteLLM Inference Hub | Your endpoint's API prefix, such as `https://your-gateway/v1` | Chat Completions |
 
-The API-key box has a visible border and a **Paste key** button. Paste into that box, then save. The box clears after saving; **API key saved in Keychain for this backend and URL** confirms local storage. A missing key or Model ID is called out explicitly. Saving does not make a network request or validate provider authentication.
+For another gateway, use **LiteLLM Inference Hub** when it accepts OpenAI-compatible Chat Completions requests with bearer-key authentication. This setting does not require the gateway to run LiteLLM. Compatibility depends on the endpoint and model supporting the request and response format; a configurable URL alone does not make every gateway compatible.
 
-| Backend | Default API base URL | Model |
-|---|---|---|
-| OpenRouter | `https://openrouter.ai/api/v1` | Exact OpenRouter model ID |
-| LiteLLM Inference Hub | Your gateway's API prefix | Exact deployment alias |
-| OpenAI | `https://api.openai.com/v1` | Exact OpenAI model ID available to your API project |
-| Claude (Anthropic) | `https://api.anthropic.com/v1` | Exact Claude model ID available to your API account |
+1. Open **Settings** (`⌘,`) and select a backend.
+2. Enter its **API base URL** and the exact **Model ID** or deployment alias available to your account. Model fields start empty so you can choose your own.
+3. Use **Paste key**, then **Save settings & key**. Each backend keeps its own URL and model; credentials are stored in macOS Keychain for that backend and exact URL.
+4. Optionally choose **Test correction with sample text** to check the connection. This sends the displayed synthetic sentence using your provider's quota, with no draft or personal writing preferences.
 
-Enter the API prefix only. WriteDock appends `/chat/completions` for OpenRouter/LiteLLM, `/responses` for OpenAI, or `/messages` for Claude. Direct OpenAI requests set `store: false`; Claude uses `x-api-key` and the pinned `anthropic-version: 2026-10-21`. No tools or conversation history are sent. See the [OpenAI text-generation guide](https://developers.openai.com/api/docs/guides/text) and [Claude Messages reference](https://platform.claude.com/docs/en/api/messages/create). Model fields start empty so you can choose an ID enabled for your account. Existing OpenRouter/LiteLLM settings migrate without resetting their values.
+Enter the API prefix only. WriteDock appends `/chat/completions`, `/responses`, or `/messages` for the selected backend. Remote endpoints require HTTPS; exact loopback hosts such as `localhost` and `127.0.0.1` may use HTTP. A local server that ignores authentication can use a non-secret placeholder key; the client requires a nonempty key.
 
-Keys are saved only in macOS Keychain, separately for each backend **and exact base URL**. A saved or unlocked key is cached in this process until Quit, so repeated corrections do not repeatedly read Keychain. Changing providers/URLs never reuses another endpoint's key. No keys enter preferences, logs, source files, or writing history.
+Saving confirms local storage, not successful provider authentication. Save a newly pasted key before testing. Existing OpenRouter/LiteLLM settings migrate without resetting their values.
 
-Corrections and Settings status checks use noninteractive Keychain queries. If macOS cannot authorize a saved key, WriteDock shows guidance instead of opening a password dialog automatically. Choose **Unlock saved key** in Settings to approve that read once, or paste the key again and choose **Save settings & key**. The native authorization dialog offers **Always Allow** to trust the current signed build for subsequent launches. Saving/removing a key and explicitly unlocking it may still need macOS authorization. A locked login Keychain or a newly signed build can require approval again. The build script supports `WRITEDOCK_SIGNING_IDENTITY` for a stable developer identity; ad-hoc signing changes trust across rebuilds. The app does not weaken Keychain access controls to avoid prompts.
+## Your text goes to the provider you choose
 
-A blank key field keeps the saved key. **Remove saved key** also clears that endpoint's session cache. Keys for other URLs can be removed by selecting that URL and using this action, or through Keychain Access under service `local.WriteDock.backend`.
+WriteDock's interface, text capture, and suggestion review run on your Mac. Inference runs at the endpoint you configure. Using a remote provider means sending that provider the passage you submit; using a gateway may also involve the upstream model provider it routes to. Their processing and retention policies apply. A local endpoint keeps inference on your Mac only if the server also runs the model locally without forwarding requests.
 
-URLs require HTTPS, except exact loopback hosts for local gateways. Redirects are refused, and authentication/rate-limit/model/unavailable/timeout errors leave source text unchanged. No automatic retries or fallback to another backend occur. A local unauthenticated proxy may use a non-secret placeholder key if it ignores authorization; the current client requires a nonempty field.
+- **You decide when text is sent.** Capturing a passage or choosing an action does not upload it. Review or redact **Text to send**, confirm the destination and model, then press **Send**. **Regenerate** explicitly sends another request.
+- **The request contains the passage and editing instructions.** These include the selected action, applicable custom request or translation language, writing goals, personal dictionary, preferences, and model request fields. No tools or conversation history are sent. Direct OpenAI requests set `store: false`; provider retention policies still apply.
+- **No background draft uploads or persistent writing history.** Nib tracks editor metadata and bounds to position itself without reading the text during tracking. Text capture happens only when you click Nib or invoke capture. Secure and protected fields are rejected.
+- **Your API keys are stored in macOS Keychain.** They are sent only to the configured endpoint for authentication. Credentials are scoped to the backend and exact URL, cached in memory until Quit, and never written to preferences, logs, or writing history. Changing the endpoint does not reuse another endpoint's key.
+- **Requests stay under your control.** Redirects are refused. WriteDock does not automatically retry or fall back to another backend. Failed inference requests leave the source text unchanged.
 
-## Use
+Non-secret settings are stored locally in macOS UserDefaults. Source context used to verify a replacement stays in memory and is never sent to the model. See [current limits](#current-limits) for capture and replacement details.
 
-1. Switch to Outlook, Teams, or Slack. **Nib appears beside a detected editor**, or in the lower-right corner of the display when editor detection or Accessibility is unavailable. Select a passage and click Nib to open the compact writing panel. **⌘⇧G** still opens the full editor.
-2. Review the **Text to send**. Edit or redact it if needed. Choose an option from **Writing action** in Nib or the full editor.
-3. Confirm the displayed destination and model, then press **Send**. Choosing an action alone does not send anything. **Regenerate** explicitly sends another request with the same passage and action.
-4. Review the result. **Show changes** marks additions in green and removals with red strikethrough; Copy/Replace always use the clean result. **Accept** approves it locally; **Replace selection** performs a separately requested, verified edit. **Dismiss** discards the suggestion. **Copy** places the suggestion on your clipboard.
+## Make your first edit
 
-Both interfaces expose the same **16 actions**:
+1. **Capture.** Select a passage in Outlook, Teams, or Slack, then click Nib. Press **⌘⇧G** to capture into the full editor, or use **Paste text** for text you copied yourself.
+2. **Choose.** Review **Text to send** and pick a **Writing action**, such as Grammar & spelling, Make concise, or Professional tone.
+3. **Send.** Check the displayed endpoint and model, then press **Send**.
+4. **Review.** Read the result. **Show changes** highlights additions in green and removals with red strikethrough. Copy and Replace use the clean result.
+5. **Apply.** Choose **Accept**, then **Replace selection** for a verified edit in a supported editor, or **Copy** and paste it yourself. **Dismiss** discards the suggestion.
 
-- **Polish & rewrite:** grammar/spelling/punctuation, improve writing, rephrase, clarity, brevity, expand.
-- **Tone:** professional, conversational, confident, empathetic, persuasive.
-- **Transform:** summarize, bullet points, translate into an explicitly entered language, custom editing request.
-- **Understand:** tone insights, returned as a separate report with evidence and reader-impact guidance. Reports cannot be accepted or used as replacement text.
+Accept approves a suggestion locally; replacement is a separate action. WriteDock never sends mail or chat messages. Tone insights are a separate report and cannot be accepted or used as replacement text.
 
-**Settings → Writing goals & personal dictionary** offers American, British, Australian, and Canadian English, audience, default formality, and accepted terminology. These are model instructions, not a guaranteed local spelling engine. The selected action takes precedence over conflicting defaults.
+If you edit or redact the captured preview, direct replacement is disabled because it no longer matches the original selection. Use Copy instead. Clicking Nib with no selection can preview a readable draft; this also supports Copy only. Editors that do not expose a writable selection use the same manual copy/paste workflow.
 
-If the result is unchanged, WriteDock labels it **UNCHANGED TEXT** and disables Accept/Replace. Grammar can correctly leave clean text alone; use **Improve writing** or **Rephrase** when you want a different version. An echo from a rewrite action is reported as an incomplete action, not a successful improvement. Try Regenerate or another model. **Settings → Test correction with sample text** checks the current backend using a displayed, synthetic sentence and your account's quota; it sends no draft or personal preferences. Save a newly pasted key before testing.
+## Settings and troubleshooting
 
-With no selection, clicking Nib previews the draft if the editor exposes a readable value and an empty selection range. This mode supports Copy; select text first for direct replacement. If you edit the captured preview, WriteDock disables automatic replacement because that preview no longer matches the source selection. Use Copy instead. Accept does not submit or change a message in another app. WriteDock never sends mail or chat messages.
+<details>
+<summary>Saved keys and macOS authorization</summary>
 
-Nib uses a nonactivating floating panel so opening it does not activate WriteDock over the source app. Close clears the compact preview; switching fields/apps also clears it. **Pause here** hides Nib for that app; resume it in Settings. You can turn the widget or character animation off, and system Reduce Motion is respected. **Open editor** moves the current preview into the larger window. Backend/model/preference changes invalidate pending suggestions in either view.
+The key box clears after saving. **API key saved in Keychain for this backend and URL** confirms storage. A blank key field keeps the saved key; **Remove saved key** deletes it and clears that endpoint's session cache. To remove a key for another URL, select that URL first, or use Keychain Access under service `local.WriteDock.backend`.
 
-For editors that omit AX text/range attributes or refuse writable selections, copy the desired passage yourself, use **Paste text**, request a suggestion, and copy/paste the result back. Check the selection and formatting before pasting. This fallback also works without Accessibility permission.
+Corrections and Settings status checks use noninteractive Keychain queries. If access needs approval, choose **Unlock saved key** or paste and save the key again. Saving, removing, or explicitly unlocking a key may trigger macOS authorization. **Always Allow** trusts the current signed build for subsequent launches; a locked Keychain or a newly signed build can require approval again. WriteDock does not weaken Keychain access controls.
 
-Nib follows field bounds and stays within the visible display, including additional monitors. An unavailable, protected, or offscreen editor uses a generic corner launcher in allowed apps; this never bypasses protected-field checks or grants text access. Disabled, paused, and disallowed apps hide Nib. Settings shows WriteDock's own Accessibility state and the widget's current status. Access granted to another app does not grant it to WriteDock. If macOS shows WriteDock enabled but the app reports access denied, remove and re-add the current app bundle, authenticate if macOS asks, then reopen WriteDock.
+</details>
 
-This version has no continuous underlines, automatic background suggestions, or per-word inline accept bubbles. It does not install Outlook/Teams/Slack add-ins. Automatic replacement requires a single selection, unchanged focus/text/range, writable AX selection, and bounded readable context. It never overwrites the entire field. Review formatting after replacement; rich style runs inside a replacement may change.
+<details>
+<summary>Nib placement, visibility, and Accessibility</summary>
 
-## Privacy and limits
+Nib appears beside detected editors, with a lower-right corner launcher when editor detection or Accessibility is unavailable. It stays within the visible display, including additional monitors. A corner launcher does not bypass protected-field checks or grant text access.
 
-- While enabled, Nib checks foreground editor metadata and bounds about every 0.7 seconds; it does not read field values or selected text during this tracking. Text capture happens only on a widget click or shortcut/menu invocation. Secure/protected fields are rejected. There is no typing monitor, background text upload, or persistent text history.
-- Only the preview passage, chosen action, custom request or translation language, writing goals, personal dictionary, writing preferences, and model request fields go to the selected endpoint. Your provider's own retention policies still apply.
-- Up to 12,000 UTF-16 characters are accepted. A source field's AX value is read to check staleness; at most 12,000 UTF-16 characters of context are retained in memory and that context is never sent. Larger or inaccessible context makes replacement unavailable.
-- Suggestions are model-generated and need review. Long/truncated, refused, empty, malformed, or unavailable responses are reported without applying them.
-- Copy deliberately replaces clipboard contents. Manual paste and formatting are under your control. Credentials and text are not logged by WriteDock; non-secret settings use macOS UserDefaults.
+Nib checks foreground editor metadata about every 0.7 seconds while enabled. Its nonactivating panel keeps the source app active. Closing the compact preview or switching apps/fields clears it. **Open editor** moves the preview into the larger window. Backend, model, or preference changes invalidate pending suggestions.
+
+Use **Pause here** to hide Nib in one app and resume it in Settings. Disabled, paused, and disallowed apps hide the widget. You can turn the widget or character animation off; system Reduce Motion is respected.
+
+Settings shows WriteDock's own Accessibility state and widget status. Permission granted to another app does not apply to WriteDock. If macOS shows WriteDock enabled but access is denied, remove and re-add the current app bundle, authenticate if asked, then reopen it. Rebuilding an ad-hoc-signed app can require renewing its grant. A stable developer signing identity helps preserve trust across updates.
+
+</details>
+
+<details>
+<summary>Unchanged text or an unexpected result</summary>
+
+WriteDock labels identical output **UNCHANGED TEXT** and disables Accept/Replace. Grammar checks may correctly leave clean text alone. Choose **Improve writing** or **Rephrase** when you want a different version. An echo from a rewrite action is reported as incomplete; try **Regenerate** or another model.
+
+Use **Test correction with sample text** in Settings to check the selected backend. Missing keys, missing model IDs, authentication failures, rate limits, unavailable models, and timeouts are reported explicitly. A saved key alone does not confirm a working connection.
+
+</details>
 
 ## Build and verify
 
-No third-party application dependencies are required. Install Apple's Command Line Tools if `swift` is absent.
+No third-party application dependencies are required. Install Apple's Command Line Tools if `swift` is absent. Build outputs in `dist/` are local artifacts and are not committed.
 
 ```bash
 bash scripts/build-app.sh
@@ -90,24 +130,31 @@ dist/WriteDock.app/Contents/MacOS/WriteDock --check-widget-state
 dist/WriteDock.app/Contents/MacOS/WriteDock --diagnostics
 ```
 
-The build script creates and verifies an ad-hoc signature. Set `WRITEDOCK_SIGNING_IDENTITY` to your own signing identity to sign with it. Full Xcode environments can also run `swift test`; this machine's Command Line Tools lack XCTest, so the dependency-free test harness is the validated route.
+The build script creates and verifies an ad-hoc signature. Set `WRITEDOCK_SIGNING_IDENTITY` to your own signing identity to sign with it. Full Xcode environments can also run `swift test`; the standalone scripts provide a dependency-free test harness when Command Line Tools lack XCTest.
 
-Preview Nib without Accessibility permission or inference using `dist/WriteDock.app/Contents/MacOS/WriteDock --widget-demo`. This is a disabled, synthetic UI demonstration, not a Slack integration test. Nib artwork is bundled with the application and used for its icon.
+The build was compiled and launched on macOS 26.7.1 arm64. Deployment target is macOS 13; other macOS versions and Intel have not been validated. This is a local build, not a notarized distribution.
 
-For a no-cost local demo:
+Preview Nib without Accessibility permission or inference using `dist/WriteDock.app/Contents/MacOS/WriteDock --widget-demo`. This is a disabled, synthetic UI demonstration. Nib artwork is bundled with the application and used for its Finder, Dock, and About icon.
 
-```bash
-python3 scripts/mock_backend.py
-```
-
-Choose LiteLLM, base URL `http://127.0.0.1:8765/v1`, model `mock-editor`, key `local-test`. The mock returns deterministic fixture edits, **not actual AI inference**. Try `This are a example. I has recieved teh message.` Stop the server with Ctrl-C. Restore your real provider settings when finished.
-
-See [the testing guide](docs/VALIDATION.md) for automated checks and the manual integration checklist.
-
-To deliberately repeat the 16 synthetic live backend checks (uses API quota; never captures application text):
+See [the testing guide](docs/VALIDATION.md) for automated checks, Keychain checks, and the manual application integration checklist. To deliberately run all 16 synthetic live backend checks (uses API quota; never captures application text):
 
 ```bash
 dist/WriteDock.app/Contents/MacOS/WriteDock --check-configured-backend
 ```
 
-Plagiarism checking, AI-text detection, authorship tracking, learned style libraries, and automatic underlines are not included.
+### Try the workflow without API usage
+
+Start the local mock server:
+
+```bash
+python3 scripts/mock_backend.py
+```
+
+Choose **LiteLLM Inference Hub**, base URL `http://127.0.0.1:8765/v1`, model `mock-editor`, and key `local-test`. Try `This are a example. I has recieved teh message.` The mock returns deterministic fixture edits, **not actual AI inference**. Stop it with Ctrl-C and restore your real provider settings when finished.
+
+## Current limits
+
+- Suggestions depend on the selected model and need review. Writing goals and dictionary entries are model instructions, not a guaranteed local spelling engine. Truncated, refused, empty, malformed, or unavailable responses are reported without applying them.
+- Passages are limited to 12,000 UTF-16 characters. A source field's Accessibility value is read to check staleness; at most 12,000 UTF-16 characters of context are retained in memory. Larger or inaccessible context makes direct replacement unavailable.
+- Direct replacement requires a single selection, unchanged focus/text/range, a writable Accessibility selection, and enough readable context to verify the edit. It writes only to the selected range. Rich formatting inside the replaced selection may change; review it afterward. Copy deliberately replaces clipboard contents.
+- WriteDock provides writing help on request. Continuous underlines, background suggestions, per-word accept bubbles, plagiarism checking, AI-text detection, authorship tracking, and learned style libraries are not included. It does not install Outlook, Teams, or Slack add-ins.
