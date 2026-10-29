@@ -14,6 +14,18 @@ public struct TextCapture {
     fileprivate let context: String?
 }
 
+/// Metadata only. Creating an anchor never reads AXValue or AXSelectedText.
+public struct EditorAnchor {
+    public let appName: String
+    public let bundleID: String
+    public let processID: pid_t
+    public let bounds: CGRect
+    fileprivate let element: AXUIElement
+    public func isSameField(as other: EditorAnchor) -> Bool {
+        processID == other.processID && CFEqual(element, other.element)
+    }
+}
+
 public enum CaptureError: LocalizedError {
     case permission, disallowed, noSelection, protectedField, unsupported, tooLong
     case stale, replacementUnsupported, unverifiable, writeUncertain, caretUncertain
@@ -44,6 +56,53 @@ public final class AccessibilityBridge {
     public static func requestPermission() {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
+    }
+
+    public func focusedEditor(allowedBundleIDs: Set<String>) -> EditorAnchor? {
+        guard Self.isTrusted, let app = NSWorkspace.shared.frontmostApplication,
+              app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+              let bundle = app.bundleIdentifier, allowedBundleIDs.contains(bundle) else { return nil }
+        let application = AXUIElementCreateApplication(app.processIdentifier)
+        AXUIElementSetMessagingTimeout(application, 0.12)
+        guard let element = Self.focusedElement(application), Self.pid(element) == app.processIdentifier else { return nil }
+        AXUIElementSetMessagingTimeout(element, 0.12)
+        guard (try? Self.checkEditable(element)) != nil,
+              (Self.attribute(element, "AXHidden" as CFString) as? Bool) != true,
+              var frame = Self.elementFrame(element), frame.width >= 20, frame.height >= 12 else { return nil }
+        if let window = Self.elementAttribute(element, kAXWindowAttribute as CFString) {
+            AXUIElementSetMessagingTimeout(window, 0.12)
+            guard (Self.attribute(window, kAXMinimizedAttribute as CFString) as? Bool) != true else { return nil }
+            if let windowFrame = Self.elementFrame(window) { frame = frame.intersection(windowFrame) }
+        }
+        guard !frame.isEmpty, !frame.isNull else { return nil }
+        return EditorAnchor(appName: app.localizedName ?? bundle, bundleID: bundle, processID: app.processIdentifier, bounds: frame, element: element)
+    }
+
+    /// Called only on a widget click. A draft without a selection is preview/copy only.
+    public func readDraft(from anchor: EditorAnchor, allowedBundleIDs: Set<String>) throws -> String {
+        guard let current = focusedEditor(allowedBundleIDs: allowedBundleIDs), current.isSameField(as: anchor) else { throw CaptureError.stale }
+        guard !Self.hasMultipleSelections(current.element) else { throw CaptureError.unsupported }
+        // Never silently broaden a nonempty selection into the full field if capture failed.
+        guard let range = Self.selectedRange(current.element), range.length == 0 else { throw CaptureError.unsupported }
+        guard let value = Self.string(current.element, kAXValueAttribute as CFString), !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw CaptureError.noSelection }
+        guard value.utf16.count <= 12_000 else { throw CaptureError.tooLong }
+        return value
+    }
+
+    private static func elementAttribute(_ element: AXUIElement, _ key: CFString) -> AXUIElement? {
+        guard let raw = attribute(element, key), CFGetTypeID(raw) == AXUIElementGetTypeID() else { return nil }
+        return unsafeBitCast(raw, to: AXUIElement.self)
+    }
+    private static func elementFrame(_ element: AXUIElement) -> CGRect? {
+        guard let position = attribute(element, kAXPositionAttribute as CFString), CFGetTypeID(position) == AXValueGetTypeID(),
+              let size = attribute(element, kAXSizeAttribute as CFString), CFGetTypeID(size) == AXValueGetTypeID() else { return nil }
+        let p = unsafeBitCast(position, to: AXValue.self), s = unsafeBitCast(size, to: AXValue.self)
+        var point = CGPoint.zero, extent = CGSize.zero
+        guard AXValueGetType(p) == .cgPoint, AXValueGetValue(p, .cgPoint, &point),
+              AXValueGetType(s) == .cgSize, AXValueGetValue(s, .cgSize, &extent),
+              point.x.isFinite, point.y.isFinite, extent.width.isFinite, extent.height.isFinite,
+              extent.width > 0, extent.height > 0 else { return nil }
+        return CGRect(origin: point, size: extent)
     }
 
     public func capture(allowedBundleIDs: Set<String>) throws -> TextCapture {

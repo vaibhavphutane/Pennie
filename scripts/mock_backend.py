@@ -68,7 +68,7 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(404, {"error": {"code": "not_found"}})
 
     def do_POST(self):
-        if not self.path.endswith("/chat/completions"):
+        if not any(self.path.endswith(suffix) for suffix in ["/chat/completions", "/responses", "/messages"]):
             self.reply(404, {"error": {"code": "not_found"}})
             return
         mode = self.path.strip("/").split("/")[0]
@@ -91,25 +91,48 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= 100_000:
                 raise ValueError("invalid length")
             payload = json.loads(self.rfile.read(length))
-            messages = payload["messages"]
-            original = next(message["content"] for message in messages if message["role"] == "user")
-            instruction = next(message["content"] for message in messages if message["role"] == "system")
+            if self.path.endswith("/responses"):
+                original, instruction = payload["input"], payload["instructions"]
+                assert payload["store"] is False and payload["max_output_tokens"] == 4096
+                assert "messages" not in payload
+            elif self.path.endswith("/messages"):
+                original, instruction = payload["messages"][0]["content"], payload["system"]
+                assert len(payload["messages"]) == 1 and payload["messages"][0]["role"] == "user"
+                assert payload["max_tokens"] == 4096
+            else:
+                messages = payload["messages"]
+                original = next(message["content"] for message in messages if message["role"] == "user")
+                instruction = next(message["content"] for message in messages if message["role"] == "system")
             if not isinstance(original, str) or not isinstance(instruction, str):
                 raise ValueError("invalid messages")
-        except (ValueError, KeyError, TypeError, StopIteration):
+        except (ValueError, KeyError, TypeError, StopIteration, AssertionError):
             self.reply(400, {"error": {"code": "bad_request"}})
             return
-        if self.headers.get("Authorization") != "Bearer local-test":
+        claude = self.path.endswith("/messages")
+        auth_ok = (self.headers.get("x-api-key") == "local-test" and self.headers.get("Authorization") is None) if claude else (self.headers.get("Authorization") == "Bearer local-test" and self.headers.get("x-api-key") is None)
+        if not auth_ok:
             self.reply(401, {"error": {"code": "invalid_key"}})
+            return
+        if claude and self.headers.get("anthropic-version") != "2026-10-21":
+            self.reply(400, {"error": {"code": "wrong_api_version"}})
             return
         if payload.get("model") != "mock-editor":
             self.reply(404, {"error": {"code": "model_not_found"}})
             return
-        if ((mode == "openrouter" and self.headers.get("X-Title") != "WriteDock")
-                or (mode == "litellm" and self.headers.get("X-Title") is not None)):
+        if mode in ["openRouter", "liteLLM", "openAI", "anthropic"] and self.headers.get("X-Title") != ("WriteDock" if mode == "openRouter" else None):
             self.reply(400, {"error": {"code": "wrong_provider_headers"}})
             return
-        self.reply(200, {"choices": [{"message": {"role": "assistant", "content": edit_sample(original, instruction)}, "finish_reason": "length" if mode == "truncated" else "stop"}]})
+        text = " " if mode == "empty" else edit_sample(original, instruction)
+        if self.path.endswith("/responses"):
+            blocks = [{"type":"refusal", "refusal":"fixture refusal"}] if mode == "refusal" else [{"type":"output_text", "text":text}]
+            output = [{"type":"function_call"}] if mode == "tools" else [{"type":"message", "role":"assistant", "status":"completed", "content":blocks}]
+            self.reply(200, {"status":"incomplete" if mode == "truncated" else "completed", "output":output})
+        elif claude:
+            stop = {"truncated":"max_tokens", "refusal":"refusal", "tools":"tool_use"}.get(mode,"end_turn")
+            self.reply(200, {"type":"message", "role":"assistant", "stop_reason":stop, "content":[{"type":"text", "text":text}]})
+        else:
+            finish = {"truncated":"length", "refusal":"content_filter", "tools":"tool_calls"}.get(mode,"stop")
+            self.reply(200, {"choices":[{"message":{"role":"assistant", "content":text},"finish_reason":finish}]})
 
 
 if __name__ == "__main__":

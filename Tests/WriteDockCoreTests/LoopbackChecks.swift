@@ -26,7 +26,7 @@ struct LoopbackChecks {
             (.conversational, "Dear team, I would like to meet.", "Hi team, I'd like to meet.")
         ]
         for kind in BackendKind.allCases {
-            let route = kind == .openRouter ? "openrouter" : "litellm"
+            let route = kind.rawValue
             let config = BackendConfig(kind: kind, baseURL: root + "/\(route)/v1", model: "mock-editor")
             for (action, text, expected) in actions {
                 let result = try await client.rewrite(text: text, action: action, preferences: "Preserve paragraphs.", config: config, apiKey: "local-test")
@@ -36,7 +36,7 @@ struct LoopbackChecks {
                 ("auth", .authentication), ("rate", .rateLimited(retryAfterSeconds: 5)),
                 ("model", .modelUnavailable), ("server", .serviceUnavailable),
                 ("malformed", .invalidResponse), ("truncated", .truncatedResponse),
-                ("redirect", .redirectRefused)
+                ("redirect", .redirectRefused), ("refusal", .contentRefused), ("tools", .invalidResponse), ("empty", .invalidResponse)
             ]
             for (path, expected) in failures {
                 let errorConfig = BackendConfig(kind: kind, baseURL: root + "/\(path)/v1", model: "mock-editor")
@@ -58,7 +58,7 @@ struct LoopbackChecks {
                 fatalError("Expected wrong key to fail")
             } catch { check(error as? InferenceError == .authentication, "authorization header delivered to server") }
         }
-        print("PASS: \(checks) real URLSession loopback checks; both backends, five actions, exact model and auth headers, HTTP 401/429/404/503, malformed/truncated responses, redirect refusal. No external inference requests.")
+        print("PASS: \(checks) real URLSession loopback checks; four backends, five actions, exact model and auth headers, HTTP 401/429/404/503, malformed/truncated responses, redirect refusal. No external inference requests.")
     }
 }
 #endif

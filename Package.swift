@@ -7,7 +7,7 @@ let package = Package(
     products: [.executable(name: "WriteDock", targets: ["WriteDock"])],
     targets: [
         .target(name: "WriteDockCore"),
-        .executableTarget(name: "WriteDock", dependencies: ["WriteDockCore"]),
+        .executableTarget(name: "WriteDock", dependencies: ["WriteDockCore"], resources: [.process("Resources")]),
         .testTarget(name: "WriteDockCoreTests", dependencies: ["WriteDockCore"])
     ]
 )

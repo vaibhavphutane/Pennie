@@ -8,8 +8,15 @@ dist/
 __pycache__/
 *.pyc
 
-# Retain raw reverse-engineering output locally; publish the report and test results.
-/docs/evidence/*
-!/docs/evidence/README.md
-!/docs/evidence/*-checks.txt
-!/docs/evidence/app-diagnostics.txt
+# Local agent configuration, investigation notes, and generated test output.
+/.codex/
+/.agents/
+/docs/evidence/
+/docs/REVERSE_ENGINEERING.md
+/docs/GRAMMARLY_OPTIONS.md
+/docs/static-findings.md
+/docs/MASCOT.md
+/scripts/inspect_download.py
+/scripts/rea_mcp.py
+/scripts/runtime-inventory.swift
+/scripts/editor-metadata.swift
